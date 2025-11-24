@@ -17,7 +17,8 @@ const api = {
   addRole: (params) => request.post(`${base}/role/addRole`, params),
   // role/getRole 根据id获取角色详情 roleId
   getRole: (params) => request.get(`${base}/role/getRole`, {params}),
-
+  // role/updateRole 修改角色,并修改菜单
+  updateRole: (params) => request.post(`${base}/role/updateRole`, params),
 };
 
 export default api;
