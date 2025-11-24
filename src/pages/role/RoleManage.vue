@@ -52,10 +52,10 @@
     <Modal v-model="showPermissionVisible" title="查看角色权限" @on-cancel="handlePermissionCancel">
       <Form ref="permissionForm" :model="permissionForm" :label-width="100">
         <Form-item label="角色名称">
-          <Input v-model="permissionForm.roleName" ></Input>
+          <Input v-model="permissionForm.roleName" readonly></Input>
         </Form-item>
         <Form-item label="角色备注">
-          <Input v-model="permissionForm.remark" ></Input>
+          <Input v-model="permissionForm.remark" readonly></Input>
         </Form-item>
         <Form-item label="权限菜单">
           <div
@@ -63,7 +63,7 @@
             <el-tree ref="viewMenuTree" :data="allMenus" show-checkbox node-key="id" :props="{
               children: 'childrenProgramList',
               label: 'programName'
-            }" :default-expand-all="true" :check-strictly="false" :disabled="true"> <!-- 查看时禁用选择 -->
+            }" :default-expand-all="true" :check-strictly="false" :disabled="true">
             </el-tree>
           </div>
         </Form-item>
@@ -82,17 +82,17 @@ export default {
       size: 10,
       // 查询表单数据
       queryForm: {
-        roleName: '', // 角色名称查询条件
-        remark: ''    // 角色备注查询条件
+        roleName: '',
+        remark: ''
       },
       isOperate: 0,
       // 新增角色相关
       addModalVisible: false,
-      modalLoading: false, // 添加这个
+      modalLoading: false,
       addRoleForm: {
         roleName: '',
         remark: '',
-        menuIds: [] // 选中的菜单ID数组
+        menuIds: []
       },
       // 查看权限相关
       showPermissionVisible: false,
@@ -112,13 +112,12 @@ export default {
             message: '请至少选择一个菜单',
             trigger: 'change',
             validator: (rule, value, callback) => {
-              // 获取树形控件当前的选中状态
               if (this.$refs.menuTree) {
                 const checkedKeys = this.$refs.menuTree.getCheckedKeys();
                 if (checkedKeys.length > 0) {
-                  callback(); // 验证通过
+                  callback();
                 } else {
-                  callback(new Error('请至少选择一个菜单')); // 验证失败
+                  callback(new Error('请至少选择一个菜单'));
                 }
               } else {
                 callback(new Error('菜单数据加载中，请稍后'));
@@ -127,16 +126,16 @@ export default {
           }
         ]
       },
-      allMenus: [], // 所有菜单数据
+      allMenus: [],
       tableColumns: [
         {
           title: '角色名称',
-          key: 'roleName', // 对应接口返回的roleName字段
+          key: 'roleName',
           align: 'center'
         },
         {
           title: '角色备注',
-          key: 'remark', // 对应接口返回的remark字段
+          key: 'remark',
           align: 'center'
         },
         {
@@ -145,16 +144,15 @@ export default {
           width: 120,
           align: 'center',
           render: (h, params) => {
-            const { index } = params; // 获取当前行索引
             return h('i-button', {
               props: {
                 type: 'primary',
                 size: 'small'
               },
               on: {
-                click: () => this.showPermission(index) // 绑定点击事件
+                click: () => this.showPermission(params.index)
               }
-            }, '查看权限'); // 按钮文本
+            }, '查看权限');
           }
         }
       ]
@@ -170,11 +168,9 @@ export default {
       }
       this.$api.getRoleList(para)
         .then((res) => {
-          // console.log('角色列表返回', res)
           if (res.code === 200) {
-            // 接口数据赋值
-            this.tableData = res.data.records; // 角色列表数据
-            this.total = res.data.total; // 总条数（用于分页）
+            this.tableData = res.data.records;
+            this.total = res.data.total;
           } else {
             this.$Message.error('获取角色列表失败：' + res.message);
           }
@@ -183,80 +179,48 @@ export default {
           this.$Message.error('网络错误，请重试');
         });
     },
-    // 搜索角色
     searchRole() {
-      this.page = 1; // 搜索时重置到第一页
+      this.page = 1;
       this.getRoleList();
     },
-    // 清空查询条件
     resetQuery() {
       this.queryForm = {
         roleName: '',
         remark: ''
       };
-      this.page = 1; // 清空后重置到第一页
+      this.page = 1;
       this.getRoleList();
     },
-    // 打开新增模态框
     addRole() {
       this.addModalVisible = true;
       this.addRoleForm = { roleName: '', remark: '', menuIds: [] };
-      this.getAllMenus(); // 加载所有菜单
+      this.getAllMenus().then(() => {
+        this.$nextTick(() => {
+          if (this.$refs.menuTree) {
+            this.$refs.menuTree.setCheckedKeys([]);
+          }
+        });
+      });
     },
-    // 关闭模态框
     handleCancel() {
       this.addRoleForm = { roleName: '', remark: '', menuIds: [] };
       this.$refs.addRoleForm.resetFields();
       if (this.$refs.menuTree) {
         this.$refs.menuTree.setCheckedKeys([]);
       }
-      this.modalLoading = false; // 添加这行
+      this.modalLoading = false;
     },
-    // 处理菜单勾选
     handleMenuCheck(checkedNode, checkedKeys) {
-      // 更新表单中的menuIds，用于验证
       this.addRoleForm.menuIds = checkedKeys.checkedKeys;
-
-      // 打印当前选中状态
       console.log('当前选中的菜单:', checkedKeys.checkedKeys);
       console.log('半选中的菜单:', checkedKeys.halfCheckedKeys);
     },
-
-    // 获取角色权限
-    getRolePermission(roleId) {
-      this.$api.getRole({ roleId })
-        .then(res => {
-          if (res.code === 200) {
-            const roleInfo = res.data;
-            // 提取权限ID列表
-            if (roleInfo.programList && roleInfo.programList.length > 0) {
-              this.permissionForm.menuIds = roleInfo.programList.map(item => item.programId);
-
-              // 设置树形控件的选中状态
-              this.$nextTick(() => {
-                if (this.$refs.viewMenuTree) {
-                  this.$refs.viewMenuTree.setCheckedKeys(this.permissionForm.menuIds);
-                }
-              });
-            }
-          } else {
-            this.$Message.error('获取角色权限失败：' + res.message);
-          }
-        })
-        .catch(err => {
-          console.error('获取角色权限接口请求失败', err);
-          this.$Message.error('网络错误，请重试');
-        });
-    },
-
-    // 关闭权限查看模态框
     handlePermissionCancel() {
       this.showPermissionVisible = false;
       if (this.$refs.viewMenuTree) {
         this.$refs.viewMenuTree.setCheckedKeys([]);
       }
     },
-    // 获取所有菜单（用于权限选择）
     getAllMenus() {
       return new Promise((resolve, reject) => {
         const para = { isOperate: 0 };
@@ -279,13 +243,11 @@ export default {
     },
     handleSubmit() {
       this.modalLoading = true;
-
       this.submitAddRole()
         .finally(() => {
           this.modalLoading = false;
         });
     },
-    // 提交新增角色
     submitAddRole() {
       return new Promise((resolve, reject) => {
         this.$refs.addRoleForm.validate(valid => {
@@ -296,22 +258,18 @@ export default {
 
           try {
             const menuTree = this.$refs.menuTree;
-
-            // 只使用 getCheckedKeys 和 getCheckedNodes
             const checkedKeys = menuTree.getCheckedKeys();
             const checkedNodes = menuTree.getCheckedNodes();
 
             console.log('选中的键:', checkedKeys);
             console.log('选中的节点:', checkedNodes);
 
-            // 直接从选中的节点中提取所有需要提交的菜单ID
-            // 包括选中的节点和它们的父节点
-            const allMenuIds = this.getAllRequiredMenuIds(checkedNodes);
+            // 获取所有需要提交的菜单ID，包括选中的二级菜单及其对应的一级菜单
+            const allMenuIds = this.getAllRequiredMenuIdsWithParents(checkedKeys);
+            console.log('最终提交的菜单ID:', allMenuIds);
 
-            // 构造 programList
             const programList = allMenuIds.map(programId => ({ programId }));
 
-            // 构造提交参数
             const params = {
               roleName: this.addRoleForm.roleName,
               remark: this.addRoleForm.remark,
@@ -328,7 +286,6 @@ export default {
                   this.getRoleList();
                   resolve();
                 } else {
-                  // this.$Message.error(res.message || '新增失败');
                   reject();
                 }
               })
@@ -341,104 +298,147 @@ export default {
       });
     },
 
-    // 获取所有需要提交的菜单ID（包括父节点）
-    getAllRequiredMenuIds(checkedNodes) {
+    // 获取所有需要提交的菜单ID，包括选中的二级菜单及其对应的一级菜单
+    getAllRequiredMenuIdsWithParents(checkedKeys) {
       const menuIds = new Set();
-
-      checkedNodes.forEach(node => {
-        // 添加当前节点
-        menuIds.add(node.id);
-
-        // 如果这是二级菜单，添加对应的一级菜单
-        if (node.parentId && node.parentId !== '0') {
-          menuIds.add(node.parentId);
+      
+      // 首先添加所有直接选中的菜单
+      checkedKeys.forEach(id => {
+        menuIds.add(id);
+      });
+      
+      // 然后为每个选中的二级菜单添加对应的一级菜单
+      this.allMenus.forEach(firstLevelMenu => {
+        const firstLevelId = firstLevelMenu.id;
+        const secondLevelMenus = firstLevelMenu.childrenProgramList || [];
+        
+        // 检查该一级菜单下是否有被选中的二级菜单
+        const hasSelectedSecondLevel = secondLevelMenus.some(menu => 
+          checkedKeys.includes(menu.id)
+        );
+        
+        // 如果有选中的二级菜单，则添加对应的一级菜单
+        if (hasSelectedSecondLevel) {
+          menuIds.add(firstLevelId);
         }
       });
 
       return Array.from(menuIds);
     },
 
-    // 查找菜单的父菜单
-    findParentMenu(menuId) {
-      // 遍历一级菜单
-      for (const menu of this.allMenus) {
-        // 如果当前就是一级菜单，返回null
-        if (menu.id === menuId) {
-          return null;
-        }
-
-        // 检查二级菜单
-        if (menu.childrenProgramList && menu.childrenProgramList.length > 0) {
-          for (const childMenu of menu.childrenProgramList) {
-            if (childMenu.id === menuId) {
-              return menu; // 返回父菜单
-            }
-          }
-        }
-      }
-      return null;
-    },
+    // 查看权限
     showPermission(index) {
       const role = this.tableData[index];
       this.permissionForm.roleId = role.id || '';
       this.permissionForm.roleName = role.roleName || '';
-      // 显示模态框
+      this.permissionForm.remark = role.remark || '';
+      
       this.showPermissionVisible = true;
 
-      // 先加载所有菜单，再设置选中状态
-      this.getRole().then(() => {
-        console.log('继续执行吧')
-        //   // 提取权限ID列表
-        //   if (role.programList && role.programList.length > 0) {
-        //     this.permissionForm.menuIds = role.programList.map(item => item.programId);
-
-        //     // 设置树形控件的选中状态
-        //     this.$nextTick(() => {
-        //       if (this.$refs.viewMenuTree) {
-        //         this.$refs.viewMenuTree.setCheckedKeys(this.permissionForm.menuIds);
-        //       }
-        //     });
-        //   }
+      this.getAllMenus().then(() => {
+        this.getRolePermission(this.permissionForm.roleId);
       });
     },
-    getRole() {
-      return new Promise((resolve, reject) => {
-        let para = {
-          roleId: this.permissionForm.roleId
-        }
-        this.$api.getRole(para)
-          .then(res => {
-            if (res.code === 200) {
-              console.log('获取到了', res)
-              resolve()
+
+    // 获取角色权限并正确设置树形控件选中状态
+    getRolePermission(roleId) {
+      const para = { roleId };
+      this.$api.getRole(para)
+        .then(res => {
+          if (res.code === 200) {
+            console.log('获取角色权限成功:', res);
+            const roleData = res.data;
+            
+            if (roleData.programList && roleData.programList.length > 0) {
+              const menuIds = roleData.programList.map(item => item.programId);
+              console.log('角色拥有的菜单ID:', menuIds);
+              
+              // 根据菜单结构和实际权限计算应该显示的选中状态
+              const displayMenuIds = this.calculateCorrectDisplayMenuIds(menuIds);
+              console.log('应该显示的菜单ID:', displayMenuIds);
+              
+              this.$nextTick(() => {
+                if (this.$refs.viewMenuTree) {
+                  // 先清空所有选中状态
+                  this.$refs.viewMenuTree.setCheckedKeys([]);
+                  
+                  // 设置计算后的选中状态
+                  this.$refs.viewMenuTree.setCheckedKeys(displayMenuIds);
+                  
+                  console.log('已正确设置树形控件选中状态');
+                }
+              });
             } else {
-              this.$Message.error(res.msg);
-              reject()
+              this.$nextTick(() => {
+                if (this.$refs.viewMenuTree) {
+                  this.$refs.viewMenuTree.setCheckedKeys([]);
+                }
+              });
             }
-          })
-          .catch(err => {
-            console.error('获取失败:', err);
-            reject()
-          });
-      })
+          } else {
+            this.$Message.error('获取角色权限失败：' + res.message);
+          }
+        })
+        .catch(err => {
+          console.error('获取角色权限接口请求失败', err);
+          this.$Message.error('网络错误，请重试');
+        });
     },
+
+    // 修复：根据菜单结构和实际权限计算正确的显示状态
+    calculateCorrectDisplayMenuIds(menuIds) {
+      const displayMenuIds = new Set();
+      
+      // 遍历所有一级菜单
+      this.allMenus.forEach(firstLevelMenu => {
+        const firstLevelId = firstLevelMenu.id;
+        const secondLevelMenus = firstLevelMenu.childrenProgramList || [];
+        
+        // 获取该一级菜单下所有的二级菜单ID
+        const allSecondLevelIds = secondLevelMenus.map(menu => menu.id);
+        
+        // 检查该一级菜单下的二级菜单在权限中的情况
+        const hasSecondLevelIds = menuIds.filter(id => allSecondLevelIds.includes(id));
+        
+        // 如果该一级菜单下的所有二级菜单都在权限中，则显示一级菜单为选中状态
+        // 否则不显示一级菜单为选中状态（让树形控件自动处理半选状态）
+        if (hasSecondLevelIds.length === allSecondLevelIds.length && allSecondLevelIds.length > 0) {
+          displayMenuIds.add(firstLevelId);
+        }
+        
+        // 添加所有在权限中的二级菜单
+        hasSecondLevelIds.forEach(id => displayMenuIds.add(id));
+        
+        // 如果一级菜单本身在权限中，也添加（但这种情况应该由上面的逻辑处理）
+        if (menuIds.includes(firstLevelId)) {
+          // 只有当一级菜单下没有二级菜单，或者所有二级菜单都被选中时，才添加一级菜单
+          if (allSecondLevelIds.length === 0 || hasSecondLevelIds.length === allSecondLevelIds.length) {
+            displayMenuIds.add(firstLevelId);
+          }
+        }
+      });
+
+      return Array.from(displayMenuIds);
+    },
+
     changePage(row) {
-      this.page = row; // 更新当前页码
-      this.getRoleList(); // 重新获取对应页的数据
+      this.page = row;
+      this.getRoleList();
     }
   },
   created() {
     this.getRoleList();
+    this.getAllMenus();
   }
 }
 </script>
 <style scoped>
+/* 样式保持不变 */
 h2 {
   padding: 20px;
   text-align: center;
 }
 
-/* 查询区域样式 */
 .search-container {
   padding: 15px;
   background: #fff;
@@ -459,12 +459,10 @@ h2 {
   text-align: right;
 }
 
-/* 按钮间距 */
 .btn-group i-button {
   margin-left: 8px;
 }
 
-/* 菜单选择样式 */
 .menu-item {
   margin-bottom: 10px;
   padding-left: 10px;
@@ -500,7 +498,6 @@ h2 {
   gap: 8px;
 }
 
-/* 解决 Element UI 复选框与文字对齐问题 */
 .el-checkbox {
   align-items: center;
   cursor: pointer;
