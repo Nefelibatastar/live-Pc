@@ -56,7 +56,7 @@
                 </div>
                 <div class="layout-breadcrumb">
                     <Breadcrumb>
-                        <Breadcrumb-item href="#">应用中心</Breadcrumb-item>
+                        <Breadcrumb-item href="/welcome">应用中心</Breadcrumb-item>
                         <Breadcrumb-item>{{ $route.name }}</Breadcrumb-item>
                     </Breadcrumb>
                 </div>

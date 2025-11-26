@@ -49,8 +49,8 @@
       </Form>
     </Modal>
     <!-- 查看/修改权限 -->
-    <Modal v-model="showPermissionVisible" :title="isEditing ? '修改角色权限' : '查看角色权限'" 
-           @on-cancel="handlePermissionCancel" :loading="permissionModalLoading">
+    <Modal v-model="showPermissionVisible" :title="isEditing ? '修改角色权限' : '查看角色权限'" @on-cancel="handlePermissionCancel"
+      :loading="permissionModalLoading">
       <Form ref="permissionForm" :model="permissionForm" :rules="permissionRules" :label-width="100">
         <Form-item label="角色名称" prop="roleName">
           <Input v-model="permissionForm.roleName" :disabled="!isEditing" placeholder="请输入角色名称"></Input>
@@ -63,8 +63,7 @@
             <el-tree ref="viewMenuTree" :data="allMenus" show-checkbox node-key="id" :props="{
               children: 'childrenProgramList',
               label: 'programName'
-            }" :default-expand-all="true" :check-strictly="false" 
-            @check="handlePermissionMenuCheck">
+            }" :default-expand-all="true" :check-strictly="false" @check="handlePermissionMenuCheck">
             </el-tree>
             <!-- 查看状态下添加遮罩层，完全禁用树形控件 -->
             <div v-if="!isEditing" class="tree-mask"></div>
@@ -176,18 +175,32 @@ export default {
         {
           title: '操作',
           key: 'action',
-          width: 120,
+          width: 220,
           align: 'center',
           render: (h, params) => {
-            return h('i-button', {
-              props: {
-                type: 'primary',
-                size: 'small'
-              },
-              on: {
-                click: () => this.showPermission(params.index)
-              }
-            }, '查看权限');
+            return h('div', [
+              h('i-button', {
+                props: {
+                  type: 'primary',
+                  size: 'small'
+                },
+                style: {
+                  marginRight: '5px'
+                },
+                on: {
+                  click: () => this.showPermission(params.index)
+                }
+              }, '查看权限'),
+              h('i-button', {
+                props: {
+                  type: 'error',
+                  size: 'small'
+                },
+                on: {
+                  click: () => this.deleteRole(params.index)
+                }
+              }, '删除')
+            ]);
           }
         }
       ]
@@ -251,6 +264,36 @@ export default {
         });
       });
     },
+    deleteRole(index) {
+      const user = this.tableData[index];
+      console.log(index,user)
+      this.$Modal.confirm({
+        title: '确认删除',
+        content: `确定要删除用户「${user.roleName}」吗？此操作不可撤销！`,
+        loading: true,
+        onOk: () => {
+          this.$api.deleteRole({ id: user.id })
+            .then(res => {
+              this.$Modal.remove();
+              if (res.code === 200) {
+                // console.log('删除用户:', user.id);
+                this.$Message.success('删除用户成功');
+                this.getRoleList();
+              } else {
+                this.$Message.error(res.message || '删除失败');
+              }
+            })
+            .catch(err => {
+              this.$Modal.remove();
+              // console.error('删除接口报错：', err);
+              this.$Message.error('网络错误，请重试');
+            });
+        },
+        onCancel: () => {
+          this.$Message.info('已取消删除');
+        }
+      });
+    },
     handleCancel() {
       this.addRoleForm = { roleName: '', remark: '', menuIds: [] };
       this.$refs.addRoleForm.resetFields();
@@ -308,18 +351,14 @@ export default {
           try {
             const menuTree = this.$refs.menuTree;
             const checkedKeys = menuTree.getCheckedKeys();
-
             // 获取所有需要提交的菜单ID，包括选中的二级菜单及其对应的一级菜单
             const allMenuIds = this.getAllRequiredMenuIdsWithParents(checkedKeys);
-
             const programList = allMenuIds.map(programId => ({ programId }));
-
             const params = {
               roleName: this.addRoleForm.roleName,
               remark: this.addRoleForm.remark,
               programList: programList
             };
-
             this.$api.addRole(params)
               .then(res => {
                 if (res.code === 200) {
@@ -340,32 +379,26 @@ export default {
         });
       });
     },
-
     // 获取所有需要提交的菜单ID，包括选中的二级菜单及其对应的一级菜单
     getAllRequiredMenuIdsWithParents(checkedKeys) {
       const menuIds = new Set();
-      
       // 首先添加所有直接选中的菜单
       checkedKeys.forEach(id => {
         menuIds.add(id);
       });
-      
       // 然后为每个选中的二级菜单添加对应的一级菜单
       this.allMenus.forEach(firstLevelMenu => {
         const firstLevelId = firstLevelMenu.id;
         const secondLevelMenus = firstLevelMenu.childrenProgramList || [];
-        
         // 检查该一级菜单下是否有被选中的二级菜单
-        const hasSelectedSecondLevel = secondLevelMenus.some(menu => 
+        const hasSelectedSecondLevel = secondLevelMenus.some(menu =>
           checkedKeys.includes(menu.id)
         );
-        
         // 如果有选中的二级菜单，则添加对应的一级菜单
         if (hasSelectedSecondLevel) {
           menuIds.add(firstLevelId);
         }
       });
-
       return Array.from(menuIds);
     },
 
@@ -376,7 +409,7 @@ export default {
       this.permissionForm.roleName = role.roleName || '';
       this.permissionForm.remark = role.remark || '';
       this.isEditing = false;
-      
+
       this.showPermissionVisible = true;
       this.isOperate = 1
       this.getAllMenus().then(() => {
@@ -392,21 +425,21 @@ export default {
         .then(res => {
           if (res.code === 200) {
             const roleData = res.data;
-            
+
             if (roleData.programList && roleData.programList.length > 0) {
               const menuIds = roleData.programList.map(item => item.programId);
-              
+
               // 根据菜单结构和实际权限计算应该显示的选中状态
               const displayMenuIds = this.calculateCorrectDisplayMenuIds(menuIds);
-              
+
               this.$nextTick(() => {
                 if (this.$refs.viewMenuTree) {
                   // 先清空所有选中状态
                   this.$refs.viewMenuTree.setCheckedKeys([]);
-                  
+
                   // 设置计算后的选中状态
                   this.$refs.viewMenuTree.setCheckedKeys(displayMenuIds);
-                  
+
                   // 更新表单中的menuIds
                   this.permissionForm.menuIds = displayMenuIds;
                 }
@@ -432,27 +465,27 @@ export default {
     // 根据菜单结构和实际权限计算正确的显示状态
     calculateCorrectDisplayMenuIds(menuIds) {
       const displayMenuIds = new Set();
-      
+
       // 遍历所有一级菜单
       this.allMenus.forEach(firstLevelMenu => {
         const firstLevelId = firstLevelMenu.id;
         const secondLevelMenus = firstLevelMenu.childrenProgramList || [];
-        
+
         // 获取该一级菜单下所有的二级菜单ID
         const allSecondLevelIds = secondLevelMenus.map(menu => menu.id);
-        
+
         // 检查该一级菜单下的二级菜单在权限中的情况
         const hasSecondLevelIds = menuIds.filter(id => allSecondLevelIds.includes(id));
-        
+
         // 如果该一级菜单下的所有二级菜单都在权限中，则显示一级菜单为选中状态
         // 否则不显示一级菜单为选中状态（让树形控件自动处理半选状态）
         if (hasSecondLevelIds.length === allSecondLevelIds.length && allSecondLevelIds.length > 0) {
           displayMenuIds.add(firstLevelId);
         }
-        
+
         // 添加所有在权限中的二级菜单
         hasSecondLevelIds.forEach(id => displayMenuIds.add(id));
-        
+
         // 如果一级菜单本身在权限中，也添加（但这种情况应该由上面的逻辑处理）
         if (menuIds.includes(firstLevelId)) {
           // 只有当一级菜单下没有二级菜单，或者所有二级菜单都被选中时，才添加一级菜单
@@ -507,7 +540,7 @@ export default {
             const allMenuIds = this.getAllRequiredMenuIdsWithParents(checkedKeys);
 
             // 构造 programList，包含 roleId
-            const programList = allMenuIds.map(programId => ({ 
+            const programList = allMenuIds.map(programId => ({
               programId,
               roleId: this.permissionForm.roleId
             }));

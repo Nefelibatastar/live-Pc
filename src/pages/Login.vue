@@ -32,7 +32,7 @@ export default {
         return {
             formLogin: {
                 loginName: 'superadmin',
-                password: '1qaz@WSX'
+                password: '000000'
             },
             formLoginRules: {
                 loginName: [
