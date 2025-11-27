@@ -219,12 +219,12 @@ export default {
 }
 
 .layout-content {
-    min-height: 200px;
+    min-height: 220px;
     margin: 15px;
     overflow: auto;
     background: #fff;
     border-radius: 4px;
-    height: 80%;
+    /* height: 80%; */
 }
 
 .layout-content-main {

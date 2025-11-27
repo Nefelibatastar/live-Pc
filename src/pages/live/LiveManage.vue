@@ -46,6 +46,9 @@
               }
             }">
           </DatePicker>
+          <div class="upload-tips">
+            开始时间一小时后推流地址失效
+          </div>
         </Form-item>
         <!-- 直播封面 -->
         <Form-item label="直播封面" prop="coverUrl">
@@ -88,30 +91,82 @@
           <label class="url-label">FLV 拉流地址：</label>
           <div class="url-content">
             <span>{{ currentStreamUrls.pullFlvUrl || '暂无' }}</span>
-            <i-button type="text" @click="copyToClipboard(currentStreamUrls.pullFlvUrl)" icon="ivu-icon-ios-copy">复制</i-button>
+            <i-button type="text" @click="copyToClipboard(currentStreamUrls.pullFlvUrl)"
+              icon="ivu-icon-ios-copy">复制</i-button>
           </div>
         </div>
         <div class="url-item">
           <label class="url-label">M3U8 拉流地址：</label>
           <div class="url-content">
             <span>{{ currentStreamUrls.pullM3u8Url || '暂无' }}</span>
-            <i-button type="text" @click="copyToClipboard(currentStreamUrls.pullM3u8Url)" icon="ivu-icon-ios-copy">复制</i-button>
+            <i-button type="text" @click="copyToClipboard(currentStreamUrls.pullM3u8Url)"
+              icon="ivu-icon-ios-copy">复制</i-button>
           </div>
         </div>
         <div class="url-item">
           <label class="url-label">RTMP 拉流地址：</label>
           <div class="url-content">
             <span>{{ currentStreamUrls.pullRtmpUrl || '暂无' }}</span>
-            <i-button type="text" @click="copyToClipboard(currentStreamUrls.pullRtmpUrl)" icon="ivu-icon-ios-copy">复制</i-button>
+            <i-button type="text" @click="copyToClipboard(currentStreamUrls.pullRtmpUrl)"
+              icon="ivu-icon-ios-copy">复制</i-button>
           </div>
         </div>
         <div class="url-item">
           <label class="url-label">RTMP 推流地址：</label>
           <div class="url-content">
             <span>{{ currentStreamUrls.pushRtmpUrl || '暂无' }}</span>
-            <i-button type="text" @click="copyToClipboard(currentStreamUrls.pushRtmpUrl)" icon="ivu-icon-ios-copy">复制</i-button>
+            <i-button type="text" @click="copyToClipboard(currentStreamUrls.pushRtmpUrl)"
+              icon="ivu-icon-ios-copy">复制</i-button>
           </div>
         </div>
+      </div>
+    </Modal>
+    <!-- 编辑直播模态框 -->
+    <Modal v-model="editModalVisible" title="编辑直播" @on-ok="handleEditSubmit" @on-cancel="handleEditCancel"
+      :loading="editModalLoading">
+      <Form :label-width="100">
+        <!-- 直播名称（不可编辑） -->
+        <Form-item label="直播名称">
+          <Input v-model="editLiveForm.liveName" disabled placeholder="直播名称"></Input>
+        </Form-item>
+
+        <!-- 直播封面（可编辑） -->
+        <Form-item label="直播封面">
+          <div class="cover-upload">
+            <input type="file" ref="editFileInput" @change="handleEditFileSelect" accept="image/jpeg, image/png"
+              style="display: none">
+
+            <div class="upload-area" v-if="!editLiveForm.coverUrl" @click="$refs.editFileInput.click()">
+              <div class="upload-icon">
+                <i class="el-icon-picture-outline"></i>
+              </div>
+              <div class="upload-text">选择图片</div>
+            </div>
+
+            <div class="preview-area" v-else>
+              <div class="preview-wrapper" @click="previewEditImage">
+                <img :src="editLiveForm.coverUrl" class="preview-thumb" alt="直播封面">
+                <div class="delete-icon" @click.stop="removeEditCoverImage">
+                  <i class="el-icon-close"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="upload-tips">
+            推荐图片尺寸为: 1000×562，支持 JPG、PNG 格式，图片大小不超过 10M
+          </div>
+        </Form-item>
+      </Form>
+    </Modal>
+
+    <!-- 图片预览模态框 -->
+    <Modal v-model="previewModalVisible" title="图片预览" width="800px" class="image-preview-modal">
+      <div style="text-align: center; padding: 20px;">
+        <img :src="previewImageUrl" style="max-width: 100%; max-height: 60vh; border-radius: 8px;" alt="预览图片">
+      </div>
+      <div slot="footer">
+        <i-button type="primary" @click="previewModalVisible = false">关闭</i-button>
       </div>
     </Modal>
   </div>
@@ -152,6 +207,9 @@ export default {
         pullRtmpUrl: '',
         pushRtmpUrl: ''
       },
+      // 图片预览相关
+      previewModalVisible: false,
+      previewImageUrl: '',
 
       // 表单验证规则
       createLiveRules: {
@@ -166,34 +224,94 @@ export default {
       // 表格列配置
       tableColumns: [
         {
-          title: '直播ID',
-          key: 'id',
-          align: 'center',
-          width: 150
-        },
-        {
           title: '直播名称',
           key: 'liveName',
           align: 'center',
           width: 210
         },
         {
+          title: '封面图',
+          key: 'liveCover',
+          align: 'center',
+          width: 121,
+          render: (h, params) => {
+            const coverId = params.row.liveCover;
+            if (!coverId) {
+              return h('span', '无封面');
+            }
+            const imgUrl = `/api/sysFile/image/${coverId}`;
+            return h('div', [
+              h('img', {
+                attrs: { src: imgUrl, alt: '封面图' },
+                style: {
+                  width: '60px',
+                  height: '34px',
+                  objectFit: 'cover',
+                  cursor: 'pointer',
+                  borderRadius: '4px'
+                },
+                on: {
+                  click: () => this.previewCoverImage(imgUrl)  // 直接传递当前图片URL
+                }
+              })
+            ]);
+          }
+        },
+        {
           title: '创建时间',
           key: 'createTime',
           align: 'center',
-          width: 200,
+          width: 180,
         },
         {
           title: '开始时间',
           key: 'startTime',
           align: 'center',
-          width: 200,
+          width: 180,
+        },
+        {
+          title: '直播状态',
+          key: 'liveStatus',
+          align: 'center',
+          width: 150,
+          render: (h, params) => {
+            // 假设状态字段为status，0=未开播，1=已开播
+            const status = params.row.liveStatus;
+            const text = status == "0" ? "未开播" : status == "1" ? "已开播" : '未知';
+            if (status === "0") {
+              // 未开播 - 红色背景，白色文字
+              return h('Tag', {
+                props: {
+                  color: 'error'
+                },
+                style: {
+                  backgroundColor: 'rgb(174,174,174)',
+                  color: '#fff',
+                  borderColor: 'rgb(174,174,174)',
+                  fontWeight: 'bold',
+                }
+              }, text);
+            } else if (status === "1"){
+              // 已开播 - 绿色背景，白色文字
+              return h('Tag', {
+                props: {
+                  color: 'success'
+                },
+                style: {
+                  backgroundColor: '#52c41a',
+                  color: '#fff',
+                  borderColor: '#52c41a',
+                  fontWeight: 'bold',
+                }
+              }, text);
+            }
+          }
         },
         {
           title: '推流地址',
           key: 'streamUrls',
           align: 'center',
-          width: 200,
+          width: 140,
           render: (h, params) => {
             return h('i-button', {
               props: {
@@ -209,7 +327,7 @@ export default {
         {
           title: '操作',
           key: 'action',
-          width: 200,
+          width: 160,
           align: 'center',
           render: (h, params) => {
             return h('div', [
@@ -225,7 +343,18 @@ export default {
             ]);
           }
         }
-      ]
+      ],
+      // 编辑直播模态框相关
+      editModalVisible: false,
+      editModalLoading: false,
+      // 编辑直播表单数据
+      editLiveForm: {
+        id: '',
+        liveName: '', // 用于回显，不可修改
+        coverUrl: '' // 封面图片URL
+      },
+      // 编辑时的图片ID
+      editImgId: ''
     };
   },
   methods: {
@@ -280,6 +409,7 @@ export default {
         startTime: '',
         coverUrl: ''
       };
+      this.imgId = ''
     },
     handleDatePicker(time) {
       this.createLiveForm.startTime = time;
@@ -339,41 +469,28 @@ export default {
           this.uploading = false;
         });
     },
-    previewImage() {
-      if (this.createLiveForm.coverUrl) {
-        const image = new Image();
-        image.src = this.createLiveForm.coverUrl;
 
-        // 创建一个模态框来显示图片
-        this.$Modal.info({
-          title: '图片预览',
-          render: (h) => {
-            return h('div', {
-              style: {
-                textAlign: 'center',
-                padding: '20px'
-              }
-            }, [
-              h('img', {
-                attrs: {
-                  src: this.createLiveForm.coverUrl,
-                  alt: '预览'
-                },
-                style: {
-                  maxWidth: '100%',
-                  maxHeight: '60vh',
-                  display: 'block',
-                  margin: '0 auto'
-                }
-              })
-            ]);
-          },
-          width: '60%',
-          closable: true,
-          maskClosable: true
-        });
+    // 通用的图片预览方法
+    previewCoverImage(imgUrl) {
+      if (!imgUrl) {
+        this.$Message.warning('暂无图片可预览');
+        return;
       }
+      
+      this.previewImageUrl = imgUrl;
+      this.previewModalVisible = true;
     },
+
+    // 预览图片 - 创建页面
+    previewImage() {
+      this.previewCoverImage(this.createLiveForm.coverUrl);
+    },
+
+    // 预览图片 - 编辑页面
+    previewEditImage() {
+      this.previewCoverImage(this.editLiveForm.coverUrl);
+    },
+
     // 删除已上传的图片
     removeCoverImage() {
       this.createLiveForm.coverUrl = '';
@@ -381,69 +498,49 @@ export default {
       // 如果需要同时删除服务器上的文件，可以调用删除接口
       this.$api.delete(this.imgId);
     },
-    // 取消创建直播
-    handleCreateCancel() {
-      this.createModalVisible = false;
-      this.$refs.createLiveForm.resetFields();
-      // 清空上传的图片
-      this.createLiveForm.coverUrl = '';
-      this.imgId = '';
-      this.uploading = false;
-    },
-    // 提交创建直播表单
-    handleCreateSubmit() {
-      console.log('出发了')
-      // this.$refs.createLiveForm.validate(valid => {
-        if (this.createLiveForm.liveName && this.createLiveForm.startTime) {
-          this.modalLoading = true;
-          const param = {
-            liveName: this.createLiveForm.liveName,
-            startTime: this.createLiveForm.startTime,
-            liveCover: this.imgId
-          }
-          this.$api.addLive(param)
-            .then(res => {
-              if (res.code === 200) {
-                this.$Message.success('创建直播成功');
-                this.createModalVisible = false;
-                this.getLiveList(); // 刷新列表
-              } else {
-                this.$Message.error('创建失败：' + res.message);
-              }
-            })
-            .catch(err => {
-              console.error('创建直播接口报错：', err);
-              this.$Message.error('网络错误，请重试');
-            })
-            .finally(() => {
-              this.modalLoading = false;
-            });
-        }else {
-          this.$Message.error('请填写必填项');
-        }
-      // });
-    },
-    // 查看直播详情（待实现）
-    viewLive(index) {
-      const live = this.tableData[index];
-      console.log('查看直播：', live);
-      // 可跳转到详情页或打开详情模态框
-    },
-    // 编辑直播（待实现）
+    // 打开编辑直播模态框
     editLive(index) {
       const live = this.tableData[index];
-      console.log('编辑直播：', live);
-      // 打开编辑模态框并回显数据
+      this.editLiveForm = {
+        id: live.id,
+        liveName: live.liveName, // 回显直播名称（不可修改）
+        coverUrl: live.liveCover ? `/api/sysFile/image/${live.liveCover}` : ''
+      };
+      // 回显图片ID
+      this.editImgId = live.liveCover || '';
+      this.editModalVisible = true;
     },
-    // 删除直播（待实现）
+
+    // 编辑时处理文件选择
+    handleEditFileSelect(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      // 复用创建时的文件校验逻辑
+      const isJPG = file.type === 'image/jpeg' || file.type === 'image/png';
+      if (!isJPG) {
+        this.$message.error('请上传JPG或PNG格式的图片');
+        return;
+      }
+
+      const isLt10M = file.size / 1024 / 1024 <= 10;
+      if (!isLt10M) {
+        this.$message.error('图片大小不能超过10M');
+        return;
+      }
+
+      this.uploadEditFile(file);
+      event.target.value = '';
+    },
+    // 删除直播
     deleteLive(index) {
       const live = this.tableData[index];
       this.$Modal.confirm({
         title: '确认删除',
         content: `确定要删除直播「${live.liveName}」吗？此操作不可撤销！`,
         onOk: () => {
-          // 调用删除接口（假设接口名为deleteLive）
-          this.$api.deleteLive({ id: live.id })
+          // 调用删除接口，仅传直播id
+          this.$api.deleteLive(live.id)
             .then(res => {
               if (res.code === 200) {
                 this.$Message.success('删除成功');
@@ -459,6 +556,112 @@ export default {
         }
       });
     },
+    // 上传编辑的图片
+    uploadEditFile(file) {
+      this.uploading = true;
+      const formData = new FormData();
+      formData.append('file', file);
+
+      this.$api.upload(formData)
+        .then(res => {
+          if (res.code === 200) {
+            this.editImgId = res.data.id;
+            this.editLiveForm.coverUrl = `/api/sysFile/image/${this.editImgId}`;
+          } else {
+            this.$message.error('图片上传失败: ' + (res.message || '未知错误'));
+          }
+        })
+        .catch(err => {
+          console.error('上传错误:', err);
+          this.$message.error('图片上传失败，请重试');
+        })
+        .finally(() => {
+          this.uploading = false;
+        });
+    },
+
+    // 编辑时删除图片
+    removeEditCoverImage() {
+      this.editLiveForm.coverUrl = '';
+      this.editImgId = '';
+    },
+
+    // 提交编辑表单
+    handleEditSubmit() {
+      this.editModalLoading = true;
+      const param = {
+        id: this.editLiveForm.id,
+        liveName: this.editLiveForm.liveName, // 虽不可编辑但需传给接口
+        liveCover: this.editImgId
+      };
+      this.$api.updateLive(param)
+        .then(res => {
+          if (res.code === 200) {
+            this.$Message.success('编辑直播成功');
+            this.editModalVisible = false;
+            this.getLiveList(); // 刷新列表
+          } else {
+            this.$Message.error('编辑失败：' + res.message);
+          }
+        })
+        .catch(err => {
+          console.error('编辑直播接口报错：', err);
+          this.$Message.error('网络错误，请重试');
+        })
+        .finally(() => {
+          this.editModalLoading = false;
+        });
+    },
+
+    // 取消编辑
+    handleEditCancel() {
+      this.editModalVisible = false;
+      this.editLiveForm = { id: '', liveName: '', coverUrl: '' };
+      this.editImgId = '';
+    },
+    // 取消创建直播
+    handleCreateCancel() {
+      this.createModalVisible = false;
+      this.$refs.createLiveForm.resetFields();
+      // 清空上传的图片
+      this.createLiveForm.coverUrl = '';
+      this.imgId = '';
+      this.uploading = false;
+    },
+    // 提交创建直播表单
+    handleCreateSubmit() {
+      console.log('出发了')
+      // this.$refs.createLiveForm.validate(valid => {
+      if (this.createLiveForm.liveName && this.createLiveForm.startTime) {
+        this.modalLoading = true;
+        const param = {
+          liveName: this.createLiveForm.liveName,
+          startTime: this.createLiveForm.startTime,
+          liveCover: this.imgId
+        }
+        this.$api.addLive(param)
+          .then(res => {
+            if (res.code === 200) {
+              this.$Message.success('创建直播成功');
+              this.createModalVisible = false;
+              this.getLiveList(); // 刷新列表
+            } else {
+              this.$Message.error('创建失败：' + res.message);
+            }
+          })
+          .catch(err => {
+            console.error('创建直播接口报错：', err);
+            this.$Message.error('网络错误，请重试');
+          })
+          .finally(() => {
+            this.modalLoading = false;
+          });
+      } else {
+        this.$Message.error('请填写必填项');
+      }
+      // });
+    },
+
     // 显示推流地址详情
     showStreamUrls(row) {
       // 赋值当前直播的推流地址
@@ -477,14 +680,14 @@ export default {
         this.$Message.warning('暂无地址可复制');
         return;
       }
-      
+
       const textarea = document.createElement('textarea');
       textarea.value = text;
       document.body.appendChild(textarea);
       textarea.select();
       document.execCommand('copy');
       document.body.removeChild(textarea);
-      
+
       this.$Message.success('地址已复制到剪贴板');
     }
   },
@@ -743,5 +946,10 @@ export default {
 
 .url-content i-button:hover {
   color: #66b1ff;
+}
+
+/* 图片预览模态框样式 */
+.image-preview-modal >>> .ivu-modal-body {
+  padding: 0;
 }
 </style>

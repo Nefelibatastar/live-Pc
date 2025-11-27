@@ -38,6 +38,10 @@ const api = {
   list: (params) => request.get(`${base}/liveStream/list`, { params }),
   // liveStream/add 新增直播创建和推/播流信息
   addLive: (params) => request.post(`${base}/liveStream/add`, params),
+  // liveStream/update 修改直播创建和推/播流信息
+  updateLive: (params) => request.put(`${base}/liveStream/update`, params),
+  // liveStream/delete/{id}删除直播创建和推/播流信息
+  deleteLive: (params) => request.delete(`${base}/liveStream/delete/${params}`),
   // sysFile/upload 文件上传
   upload: (params) => request.post(`${base}/sysFile/upload`, params),
   // sysFile/image/{id}根据ID获取图片
