@@ -12,7 +12,7 @@ import echarts from './pages/charts/echarts.vue'
 import RoleManage from './pages/role/RoleManage.vue'
 import UserManage from './pages/user/UserManage.vue'
 import LiveManage from './pages/live/LiveManage.vue'
-
+import MenuManage from './pages/menu/menuManage.vue'
 let routes = [
     {
         path: '/login',
@@ -46,6 +46,12 @@ let routes = [
                 component: UserManage,
                 name: '用户管理', // 菜单显示的名称
                 hidden: false // 设为false，确保菜单显示
+            },
+            {
+                path: '/caidanguanli',
+                component: MenuManage,
+                name: '菜单管理',
+                hidden: false
             },
             {
                 path: '/zhiboxiangmu', // 

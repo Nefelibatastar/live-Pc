@@ -88,30 +88,6 @@
     <Modal v-model="streamUrlModalVisible" title="推流地址详情" width="800px">
       <div class="stream-url-container">
         <div class="url-item">
-          <label class="url-label">FLV 拉流地址：</label>
-          <div class="url-content">
-            <span>{{ currentStreamUrls.pullFlvUrl || '暂无' }}</span>
-            <i-button type="text" @click="copyToClipboard(currentStreamUrls.pullFlvUrl)"
-              icon="ivu-icon-ios-copy">复制</i-button>
-          </div>
-        </div>
-        <div class="url-item">
-          <label class="url-label">M3U8 拉流地址：</label>
-          <div class="url-content">
-            <span>{{ currentStreamUrls.pullM3u8Url || '暂无' }}</span>
-            <i-button type="text" @click="copyToClipboard(currentStreamUrls.pullM3u8Url)"
-              icon="ivu-icon-ios-copy">复制</i-button>
-          </div>
-        </div>
-        <div class="url-item">
-          <label class="url-label">RTMP 拉流地址：</label>
-          <div class="url-content">
-            <span>{{ currentStreamUrls.pullRtmpUrl || '暂无' }}</span>
-            <i-button type="text" @click="copyToClipboard(currentStreamUrls.pullRtmpUrl)"
-              icon="ivu-icon-ios-copy">复制</i-button>
-          </div>
-        </div>
-        <div class="url-item">
           <label class="url-label">RTMP 推流地址：</label>
           <div class="url-content">
             <span>{{ currentStreamUrls.pushRtmpUrl || '暂无' }}</span>
@@ -119,6 +95,28 @@
               icon="ivu-icon-ios-copy">复制</i-button>
           </div>
         </div>
+      </div>
+    </Modal>
+    <!-- 播流地址详情 -->
+    <Modal v-model="streamUrlModal" title="播流地址详情" width="800px">
+      <div class="stream-url-container">
+        <div class="url-item">
+          <label class="url-label">FLV 播流地址：</label>
+          <div class="url-content">
+            <span>{{ currentStreamUrls.pullFlvUrl || '暂无' }}</span>
+            <i-button type="text" @click="toClipboard(currentStreamUrls.pullFlvUrl)"
+              icon="ivu-icon-ios-copy">跳转</i-button>
+          </div>
+        </div>
+        <div class="url-item">
+          <label class="url-label">M3U8 播流地址：</label>
+          <div class="url-content">
+            <span>{{ currentStreamUrls.pullM3u8Url || '暂无' }}</span>
+            <i-button type="text" @click="toClipboard(currentStreamUrls.pullM3u8Url)"
+              icon="ivu-icon-ios-copy">跳转</i-button>
+          </div>
+        </div>
+
       </div>
     </Modal>
     <!-- 编辑直播模态框 -->
@@ -173,6 +171,7 @@
 </template>
 
 <script>
+import { config } from '../../config'
 export default {
   name: 'LiveManage',
   data() {
@@ -201,6 +200,7 @@ export default {
       },
       // 推流地址模态框相关
       streamUrlModalVisible: false,
+      streamUrlModal: false,
       currentStreamUrls: {
         pullFlvUrl: '',
         pullM3u8Url: '',
@@ -261,19 +261,19 @@ export default {
           title: '创建时间',
           key: 'createTime',
           align: 'center',
-          width: 180,
+          width: 150,
         },
         {
           title: '开始时间',
           key: 'startTime',
           align: 'center',
-          width: 180,
+          width: 150,
         },
         {
           title: '直播状态',
           key: 'liveStatus',
           align: 'center',
-          width: 150,
+          width: 110,
           render: (h, params) => {
             // 假设状态字段为status，0=未开播，1=已开播
             const status = params.row.liveStatus;
@@ -291,7 +291,7 @@ export default {
                   fontWeight: 'bold',
                 }
               }, text);
-            } else if (status === "1"){
+            } else if (status === "1") {
               // 已开播 - 绿色背景，白色文字
               return h('Tag', {
                 props: {
@@ -308,10 +308,27 @@ export default {
           }
         },
         {
-          title: '推流地址',
+          title: '播流地址',
           key: 'streamUrls',
           align: 'center',
-          width: 140,
+          width: 100,
+          render: (h, params) => {
+            return h('i-button', {
+              props: {
+                type: 'primary',
+                size: 'small'
+              },
+              on: {
+                click: () => this.showStream(params.row)
+              }
+            }, '查看地址');
+          }
+        },
+        {
+          title: '推流地址',
+          key: 'streamUrl',
+          align: 'center',
+          width: 100,
           render: (h, params) => {
             return h('i-button', {
               props: {
@@ -327,7 +344,7 @@ export default {
         {
           title: '操作',
           key: 'action',
-          width: 160,
+          width: 130,
           align: 'center',
           render: (h, params) => {
             return h('div', [
@@ -476,7 +493,7 @@ export default {
         this.$Message.warning('暂无图片可预览');
         return;
       }
-      
+
       this.previewImageUrl = imgUrl;
       this.previewModalVisible = true;
     },
@@ -666,13 +683,20 @@ export default {
     showStreamUrls(row) {
       // 赋值当前直播的推流地址
       this.currentStreamUrls = {
-        pullFlvUrl: row.pullFlvUrl || '',
-        pullM3u8Url: row.pullM3u8Url || '',
-        pullRtmpUrl: row.pullRtmpUrl || '',
         pushRtmpUrl: row.pushRtmpUrl || ''
       };
       // 打开模态框
       this.streamUrlModalVisible = true;
+    },
+    // 显示播流地址详情
+    showStream(row) {
+      // 赋值当前直播的播流地址
+      this.currentStreamUrls = {
+        pullFlvUrl: row.pullFlvUrl || '',
+        pullM3u8Url: row.pullM3u8Url || ''
+      };
+      // 打开模态框
+      this.streamUrlModal = true;
     },
     // 复制到剪贴板
     copyToClipboard(text) {
@@ -689,6 +713,19 @@ export default {
       document.body.removeChild(textarea);
 
       this.$Message.success('地址已复制到剪贴板');
+    },
+
+    // 跳转播流地址
+    toClipboard(streamUrl) {
+      // 判断流类型
+      const isM3u8 = streamUrl.includes('.m3u8');
+      const paramName = isM3u8 ? 'm3u8' : 'flv';
+
+      // 构建播放器URL
+      const playerUrl = `http://localhost:8081/?${paramName}=${encodeURIComponent(streamUrl)}`;
+
+      // 在新标签页打开
+      window.open(playerUrl, '_blank');
     }
   },
   created() {
@@ -949,7 +986,7 @@ export default {
 }
 
 /* 图片预览模态框样式 */
-.image-preview-modal >>> .ivu-modal-body {
+.image-preview-modal>>>.ivu-modal-body {
   padding: 0;
 }
 </style>

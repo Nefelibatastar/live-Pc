@@ -37,8 +37,8 @@ module.exports = {
         proxyTable: {
             // 配置代理规则（以 '/api' 为前缀的请求会被代理）
             '/api': {
-                // target: 'http://192.168.3.19:8082', // 紫微
-                target: 'http://192.168.3.37:8082', // 常鉥
+                target: 'http://192.168.3.19:8082', // 紫微
+                // target: 'http://192.168.3.37:8082', // 常鉥
                 changeOrigin: true, // 允许跨域
                 pathRewrite: {
                     '^/api': '' // 如果后端接口没有 '/api' 前缀，就替换为空（根据实际情况调整）

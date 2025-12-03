@@ -8,8 +8,14 @@ const api = {
   // 登录相关
   requestLogin: (params) => request.post(`${base}/user/login`, params),
 
-  // 系统相关
+  // 系统菜单相关
   getProgram: (params) => request.get(`${base}/program/getProgram`, { params }),
+  // 新增菜单
+  addProgram: (params) => request.post(`${base}/program/addProgram`, params),
+  // 修改菜单
+  updateProgram: (params) => request.post(`${base}/program/updateProgram`, params),
+  // 删除菜单
+  deleteProgram: (params) => request.post(`${base}/program/deleteProgram`, params),
 
   // 角色相关
   // role/getRoleList 后台角色列表
