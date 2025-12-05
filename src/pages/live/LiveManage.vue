@@ -104,7 +104,7 @@
           <label class="url-label">FLV 播流地址：</label>
           <div class="url-content">
             <span>{{ currentStreamUrls.pullFlvUrl || '暂无' }}</span>
-            <i-button type="text" @click="toClipboard(currentStreamUrls.pullFlvUrl)"
+            <i-button type="text" @click="toClipboard(currentId,'flv')"
               icon="ivu-icon-ios-copy">跳转</i-button>
           </div>
         </div>
@@ -112,7 +112,7 @@
           <label class="url-label">M3U8 播流地址：</label>
           <div class="url-content">
             <span>{{ currentStreamUrls.pullM3u8Url || '暂无' }}</span>
-            <i-button type="text" @click="toClipboard(currentStreamUrls.pullM3u8Url)"
+            <i-button type="text" @click="toClipboard(currentId,'m3u8')"
               icon="ivu-icon-ios-copy">跳转</i-button>
           </div>
         </div>
@@ -175,11 +175,22 @@ import { config } from '../../config'
 export default {
   name: 'LiveManage',
   data() {
+    // 验证不包含中文的正则表达式
+    const noChineseValidator = (rule, value, callback) => {
+      // 匹配中文字符的正则表达式
+      const chineseRegex = /[\u4e00-\u9fa5]/;
+      if (chineseRegex.test(value)) {
+        callback(new Error('直播名称不能包含中文'));
+      } else {
+        callback();
+      }
+    };
     return {
       self: this,
       uploading: false, // 上传状态
       // 表格数据
       tableData: [],
+      currentId: '',
       total: 0,
       // 分页参数
       pageNum: 1,
@@ -215,7 +226,8 @@ export default {
       createLiveRules: {
         liveName: [
           { required: true, message: '请输入直播名称', trigger: 'blur' },
-          { max: 100, message: '直播名称不能超过100个字', trigger: 'blur' }
+          { max: 100, message: '直播名称不能超过100个字符', trigger: 'blur' },
+          { validator: noChineseValidator, trigger: 'blur' }
         ],
         startTime: [
           { required: true, message: '请选择开始时间', trigger: ['change', 'blur'] }
@@ -313,15 +325,25 @@ export default {
           align: 'center',
           width: 100,
           render: (h, params) => {
+            const row = params.row;
+            const canShow = this.canShowStreamUrl(row);
+
             return h('i-button', {
               props: {
-                type: 'primary',
-                size: 'small'
+                type: canShow ? 'primary' : 'default',
+                size: 'small',
+                disabled: !canShow
               },
               on: {
-                click: () => this.showStream(params.row)
+                click: () => {
+                  if (canShow) {
+                    this.showStream(row);
+                  } else {
+                    this.$Message.warning('播流地址已失效，不可查看');
+                  }
+                }
               }
-            }, '查看地址');
+            }, canShow ? '查看地址' : '已失效');
           }
         },
         {
@@ -330,21 +352,31 @@ export default {
           align: 'center',
           width: 100,
           render: (h, params) => {
+            const row = params.row;
+            const canShow = this.canShowStreamUrl(row);
+
             return h('i-button', {
               props: {
-                type: 'primary',
-                size: 'small'
+                type: canShow ? 'primary' : 'default',
+                size: 'small',
+                disabled: !canShow
               },
               on: {
-                click: () => this.showStreamUrls(params.row)
+                click: () => {
+                  if (canShow) {
+                    this.showStreamUrls(row);
+                  } else {
+                    this.$Message.warning('推流地址已失效，不可查看');
+                  }
+                }
               }
-            }, '查看地址');
+            }, canShow ? '查看地址' : '已失效');
           }
         },
         {
           title: '操作',
           key: 'action',
-          width: 130,
+          width: 200,
           align: 'center',
           render: (h, params) => {
             return h('div', [
@@ -375,6 +407,26 @@ export default {
     };
   },
   methods: {
+    // 判断是否可以显示流地址
+    canShowStreamUrl(row) {
+      // 如果直播已开播，可以查看地址
+      if (row.liveStatus === "1") {
+        return true;
+      }
+
+      // 如果直播未开播，检查时间是否超过开始时间+1小时
+      if (row.liveStatus === "0" && row.startTime) {
+        const startTime = new Date(row.startTime).getTime();
+        const currentTime = new Date().getTime();
+        const oneHour = 60 * 60 * 1000; // 1小时的毫秒数
+
+        // 如果当前时间不超过开始时间+1小时，可以查看
+        return currentTime <= startTime + oneHour;
+      }
+
+      return false;
+    },
+
     // 获取直播列表
     getLiveList() {
       const params = {
@@ -648,39 +700,50 @@ export default {
     // 提交创建直播表单
     handleCreateSubmit() {
       console.log('出发了')
-      // this.$refs.createLiveForm.validate(valid => {
-      if (this.createLiveForm.liveName && this.createLiveForm.startTime) {
-        this.modalLoading = true;
-        const param = {
-          liveName: this.createLiveForm.liveName,
-          startTime: this.createLiveForm.startTime,
-          liveCover: this.imgId
-        }
-        this.$api.addLive(param)
-          .then(res => {
-            if (res.code === 200) {
-              this.$Message.success('创建直播成功');
-              this.createModalVisible = false;
-              this.getLiveList(); // 刷新列表
-            } else {
-              this.$Message.error('创建失败：' + res.message);
+      this.$refs.createLiveForm.validate(valid => {
+        if (valid) {
+
+          if (this.createLiveForm.liveName && this.createLiveForm.startTime) {
+            this.modalLoading = true;
+            const param = {
+              liveName: this.createLiveForm.liveName,
+              startTime: this.createLiveForm.startTime,
+              liveCover: this.imgId
             }
-          })
-          .catch(err => {
-            console.error('创建直播接口报错：', err);
-            this.$Message.error('网络错误，请重试');
-          })
-          .finally(() => {
-            this.modalLoading = false;
-          });
-      } else {
-        this.$Message.error('请填写必填项');
-      }
-      // });
+            this.$api.addLive(param)
+              .then(res => {
+                if (res.code === 200) {
+                  this.$Message.success('创建直播成功');
+                  this.createModalVisible = false;
+                  this.getLiveList(); // 刷新列表
+                } else {
+                  this.$Message.error('创建失败：' + res.message);
+                }
+              })
+              .catch(err => {
+                console.error('创建直播接口报错：', err);
+                this.$Message.error('网络错误，请重试');
+              })
+              .finally(() => {
+                this.modalLoading = false;
+              });
+          } else {
+            this.$Message.error('请填写必填项');
+          }
+        }else {
+          this.$Message.error('请检查填写项');
+        }
+      });
     },
 
     // 显示推流地址详情
     showStreamUrls(row) {
+      // 先检查是否可以显示
+      if (!this.canShowStreamUrl(row)) {
+        this.$Message.warning('推流地址已失效，不可查看');
+        return;
+      }
+
       // 赋值当前直播的推流地址
       this.currentStreamUrls = {
         pushRtmpUrl: row.pushRtmpUrl || ''
@@ -690,6 +753,13 @@ export default {
     },
     // 显示播流地址详情
     showStream(row) {
+      this.currentId = row.id
+      // 先检查是否可以显示
+      if (!this.canShowStreamUrl(row)) {
+        this.$Message.warning('播流地址已失效，不可查看');
+        return;
+      }
+
       // 赋值当前直播的播流地址
       this.currentStreamUrls = {
         pullFlvUrl: row.pullFlvUrl || '',
@@ -715,14 +785,14 @@ export default {
       this.$Message.success('地址已复制到剪贴板');
     },
 
-    // 跳转播流地址
-    toClipboard(streamUrl) {
+    // 跳转播流地址 通过id传入调接口获取
+    toClipboard(id,type) {
       // 判断流类型
-      const isM3u8 = streamUrl.includes('.m3u8');
-      const paramName = isM3u8 ? 'm3u8' : 'flv';
+      // const isM3u8 = streamUrl.includes('.m3u8');
+      // const paramName = isM3u8 ? 'm3u8' : 'flv';
 
       // 构建播放器URL
-      const playerUrl = `http://localhost:8081/?${paramName}=${encodeURIComponent(streamUrl)}`;
+      const playerUrl = `${config.playerBaseUrl}/?id=${id}&type=${type}`;
 
       // 在新标签页打开
       window.open(playerUrl, '_blank');

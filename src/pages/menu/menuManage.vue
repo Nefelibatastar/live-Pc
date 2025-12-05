@@ -12,35 +12,11 @@
       </Row>
     </div>
 
-    <!-- 菜单展示表格 -->
-    <div class="menu-table">
+    <!-- 菜单展示表格 - 添加固定高度容器 -->
+    <div class="menu-table-container">
       <Table :columns="tableColumns" :data="displayMenuData" :loading="loading" border stripe class="menu-tree-table">
         <!-- 操作列自定义渲染 -->
-        <template slot-scope="{ row }" slot="action">
-          <div class="action-buttons">
-            <!-- 新增按钮（+号） -->
-            <Tooltip content="新增子菜单" placement="top">
-              <i-button type="primary" size="small" shape="circle" @click="handleAddSubMenu(row)" class="add-btn">
-                <Icon type="md-add" />
-              </i-button>
-            </Tooltip>
-
-            <!-- 编辑按钮 -->
-            <Tooltip content="编辑菜单" placement="top">
-              <i-button type="info" size="small" shape="circle" @click="handleEditMenu(row)" style="margin-left: 8px;">
-                <Icon type="md-create" />
-              </i-button>
-            </Tooltip>
-
-            <!-- 删除按钮 -->
-            <Tooltip content="删除菜单" placement="top">
-              <i-button type="error" size="small" shape="circle" @click="handleDeleteMenu(row)"
-                style="margin-left: 8px;">
-                <Icon type="md-trash" />
-              </i-button>
-            </Tooltip>
-          </div>
-        </template>
+       
       </Table>
     </div>
 
@@ -431,14 +407,14 @@ export default {
         onOk: async () => {
           try {
             // 这里调用删除接口
-            // const res = await this.$api.deleteMenu({ id: row.id });
-            // if (res.code === 200) {
-            //   this.$Message.success('删除成功');
-            //   this.getMenuList();
-            // } else {
-            //   this.$Message.error(res.message || '删除失败');
-            // }
-            this.$Message.success('删除功能待实现');
+            const res = await this.$api.deleteProgram({ id: row.id });
+            if (res.code === 200) {
+              this.$Message.success('删除成功');
+              this.getMenuList();
+            } else {
+              this.$Message.error(res.message || '删除失败');
+            }
+            this.getMenuList()
           } catch (error) {
             this.$Message.error('删除失败');
           }
@@ -580,12 +556,21 @@ export default {
   margin-left: 8px;
 }
 
-.menu-table {
+/* 添加固定高度容器 */
+.menu-table-container {
   margin-top: 16px;
+  height: calc(100vh - 200px);
+  /* 根据页面高度自适应，您可以调整这个值 */
+  overflow-y: auto;
+  /* 添加垂直滚动条 */
+  border: 1px solid #dcdee2;
+  border-radius: 4px;
 }
 
 .menu-tree-table {
   width: 100%;
+  min-width: 800px;
+  /* 确保表格有最小宽度 */
 }
 
 .menu-name-cell {
@@ -647,5 +632,24 @@ export default {
   background-color: #d9d9d9 !important;
   border-color: #d9d9d9 !important;
   color: #fff !important;
+}
+
+/* 美化滚动条样式 */
+.menu-table-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.menu-table-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.menu-table-container::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.menu-table-container::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
 }
 </style>
