@@ -6,9 +6,9 @@ const ENV_CONFIG = {
   // test: {
   //   playerBaseUrl: 'http://test-player.yourdomain.com'
   // },
-  // production: {
-  //   playerBaseUrl: 'http://player.yourdomain.com'
-  // }
+  production: {
+    playerBaseUrl: 'http://lives.hbjcws.com.cn/'
+  }
 };
 
 // 获取当前环境

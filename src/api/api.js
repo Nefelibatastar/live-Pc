@@ -1,7 +1,8 @@
 // import axios from 'axios';
 import request from '../utils/request'; // 引入封装好的request（而非直接用axios）
 
-let base = '/api';
+// let base = '/api';
+let base = 'http://lives.hbjcws.com.cn/api';
 
 // 统一封装所有API接口
 const api = {
