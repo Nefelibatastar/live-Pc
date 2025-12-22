@@ -5,7 +5,7 @@
       <Row :gutter="16" class="search-row">
         <!-- 直播名称搜索框 -->
         <Col :span="6">
-        <i-input v-model="queryForm.liveName" placeholder="请输入直播名称" class="search-input"></i-input>
+        <i-input v-model="queryForm.liveShowName" placeholder="请输入直播名称" class="search-input"></i-input>
         </Col>
         <!-- 按钮区域 -->
         <Col :span="18" class="btn-group">
@@ -32,8 +32,8 @@
       :loading="modalLoading">
       <Form ref="createLiveForm" :model="createLiveForm" :rules="createLiveRules" :label-width="100">
         <!-- 直播名称 -->
-        <Form-item label="直播名称" prop="liveName">
-          <Input v-model="createLiveForm.liveName" placeholder="请输入直播名称" :maxlength="100" show-word-limit></Input>
+        <Form-item label="直播名称" prop="liveShowName">
+          <Input v-model="createLiveForm.liveShowName" placeholder="请输入直播名称" :maxlength="100" show-word-limit></Input>
         </Form-item>
 
         <!-- 开始时间 -->
@@ -125,7 +125,7 @@
       <Form :label-width="100">
         <!-- 直播名称（不可编辑） -->
         <Form-item label="直播名称">
-          <Input v-model="editLiveForm.liveName" disabled placeholder="直播名称"></Input>
+          <Input v-model="editLiveForm.liveShowName" disabled placeholder="直播名称"></Input>
         </Form-item>
 
         <!-- 直播封面（可编辑） -->
@@ -178,12 +178,12 @@ export default {
     // 验证不包含中文的正则表达式
     const noChineseValidator = (rule, value, callback) => {
       // 匹配中文字符的正则表达式
-      const chineseRegex = /[\u4e00-\u9fa5]/;
-      if (chineseRegex.test(value)) {
-        callback(new Error('直播名称不能包含中文'));
-      } else {
+      // const chineseRegex = /[\u4e00-\u9fa5]/;
+      // if (chineseRegex.test(value)) {
+      //   callback(new Error('直播名称不能包含中文'));
+      // } else {
         callback();
-      }
+      // }
     };
     return {
       self: this,
@@ -197,7 +197,7 @@ export default {
       pageSize: 10,
       // 查询表单
       queryForm: {
-        liveName: ''
+        liveShowName: ''
       },
       imgId: '',
       // 创建直播模态框相关
@@ -205,7 +205,7 @@ export default {
       modalLoading: false,
       // 创建直播表单数据
       createLiveForm: {
-        liveName: '',       // 直播名称
+        liveShowName: '',       // 直播名称
         startTime: '',      // 开始时间
         coverUrl: ''        // 封面图片URL
       },
@@ -224,7 +224,7 @@ export default {
 
       // 表单验证规则
       createLiveRules: {
-        liveName: [
+        liveShowName: [
           { required: true, message: '请输入直播名称', trigger: 'blur' },
           { max: 100, message: '直播名称不能超过100个字符', trigger: 'blur' },
           { validator: noChineseValidator, trigger: 'blur' }
@@ -237,7 +237,7 @@ export default {
       tableColumns: [
         {
           title: '直播名称',
-          key: 'liveName',
+          key: 'liveShowName',
           align: 'center',
           width: 210
         },
@@ -399,7 +399,7 @@ export default {
       // 编辑直播表单数据
       editLiveForm: {
         id: '',
-        liveName: '', // 用于回显，不可修改
+        liveShowName: '', // 用于回显，不可修改
         coverUrl: '' // 封面图片URL
       },
       // 编辑时的图片ID
@@ -432,7 +432,7 @@ export default {
       const params = {
         pageNum: this.pageNum,
         pageSize: this.pageSize,
-        liveName: this.queryForm.liveName || ''
+        liveShowName: this.queryForm.liveShowName || ''
       };
       this.$api.list(params)
         .then(res => {
@@ -455,7 +455,7 @@ export default {
     },
     // 重置搜索条件
     resetQuery() {
-      this.queryForm = { liveName: '' };
+      this.queryForm = { liveShowName: '' };
       this.pageNum = 1;
       this.getLiveList();
     },
@@ -474,7 +474,7 @@ export default {
     createLive() {
       this.createModalVisible = true;
       this.createLiveForm = {
-        liveName: '',
+        liveShowName: '',
         startTime: '',
         coverUrl: ''
       };
@@ -572,7 +572,7 @@ export default {
       const live = this.tableData[index];
       this.editLiveForm = {
         id: live.id,
-        liveName: live.liveName, // 回显直播名称（不可修改）
+        liveShowName: live.liveShowName, // 回显直播名称（不可修改）
         coverUrl: live.liveCover ? `/api/sysFile/image/${live.liveCover}` : ''
       };
       // 回显图片ID
@@ -606,7 +606,7 @@ export default {
       const live = this.tableData[index];
       this.$Modal.confirm({
         title: '确认删除',
-        content: `确定要删除直播「${live.liveName}」吗？此操作不可撤销！`,
+        content: `确定要删除直播「${live.liveShowName}」吗？此操作不可撤销！`,
         onOk: () => {
           // 调用删除接口，仅传直播id
           this.$api.deleteLive(live.id)
@@ -660,7 +660,7 @@ export default {
       this.editModalLoading = true;
       const param = {
         id: this.editLiveForm.id,
-        liveName: this.editLiveForm.liveName, // 虽不可编辑但需传给接口
+        liveShowName: this.editLiveForm.liveShowName, // 虽不可编辑但需传给接口
         liveCover: this.editImgId
       };
       this.$api.updateLive(param)
@@ -685,7 +685,7 @@ export default {
     // 取消编辑
     handleEditCancel() {
       this.editModalVisible = false;
-      this.editLiveForm = { id: '', liveName: '', coverUrl: '' };
+      this.editLiveForm = { id: '', liveShowName: '', coverUrl: '' };
       this.editImgId = '';
     },
     // 取消创建直播
@@ -703,10 +703,10 @@ export default {
       this.$refs.createLiveForm.validate(valid => {
         if (valid) {
 
-          if (this.createLiveForm.liveName && this.createLiveForm.startTime) {
+          if (this.createLiveForm.liveShowName && this.createLiveForm.startTime) {
             this.modalLoading = true;
             const param = {
-              liveName: this.createLiveForm.liveName,
+              liveShowName: this.createLiveForm.liveShowName,
               startTime: this.createLiveForm.startTime,
               liveCover: this.imgId
             }
