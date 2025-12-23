@@ -80,6 +80,8 @@
           <div class="upload-tips">
             推荐图片尺寸为: 1000×562，支持 JPG、PNG 格式，图片大小不超过 10M
           </div>
+          <!-- 添加报名表勾选框 -->
+          <router-view></router-view>
         </Form-item>
       </Form>
     </Modal>
@@ -104,16 +106,14 @@
           <label class="url-label">FLV 播流地址：</label>
           <div class="url-content">
             <span>{{ currentStreamUrls.pullFlvUrl || '暂无' }}</span>
-            <i-button type="text" @click="toClipboard(currentId,'flv')"
-              icon="ivu-icon-ios-copy">跳转</i-button>
+            <i-button type="text" @click="toClipboard(currentId, 'flv')" icon="ivu-icon-ios-copy">跳转</i-button>
           </div>
         </div>
         <div class="url-item">
           <label class="url-label">M3U8 播流地址：</label>
           <div class="url-content">
             <span>{{ currentStreamUrls.pullM3u8Url || '暂无' }}</span>
-            <i-button type="text" @click="toClipboard(currentId,'m3u8')"
-              icon="ivu-icon-ios-copy">跳转</i-button>
+            <i-button type="text" @click="toClipboard(currentId, 'm3u8')" icon="ivu-icon-ios-copy">跳转</i-button>
           </div>
         </div>
 
@@ -182,7 +182,7 @@ export default {
       // if (chineseRegex.test(value)) {
       //   callback(new Error('直播名称不能包含中文'));
       // } else {
-        callback();
+      callback();
       // }
     };
     return {
@@ -403,7 +403,8 @@ export default {
         coverUrl: '' // 封面图片URL
       },
       // 编辑时的图片ID
-      editImgId: ''
+      editImgId: '',
+      addEnrollmentForm: false,
     };
   },
   methods: {
@@ -730,7 +731,7 @@ export default {
           } else {
             this.$Message.error('请填写必填项');
           }
-        }else {
+        } else {
           this.$Message.error('请检查填写项');
         }
       });
@@ -786,7 +787,7 @@ export default {
     },
 
     // 跳转播流地址 通过id传入调接口获取
-    toClipboard(id,type) {
+    toClipboard(id, type) {
       // 判断流类型
       // const isM3u8 = streamUrl.includes('.m3u8');
       // const paramName = isM3u8 ? 'm3u8' : 'flv';
@@ -796,7 +797,21 @@ export default {
 
       // 在新标签页打开
       window.open(playerUrl, '_blank');
-    }
+    },
+    // 处理勾选事件
+    handleEnrollmentCheck(checked) {
+      this.addEnrollmentForm = checked;
+    },
+
+    // 打开报名表编辑页面
+    openEnrollmentFormPage() {
+      // 可以选择在当前页面打开弹窗或者跳转到新页面
+      // 这里演示跳转到新页面
+      this.$router.push('/zhiboxiangmu/enrollment-form')
+
+      // 如果需要在当前页面打开弹窗，可以使用:
+      // this.enrollmentFormVisible = true;
+    },
   },
   created() {
     // 页面加载时获取直播列表

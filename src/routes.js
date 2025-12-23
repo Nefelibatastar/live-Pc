@@ -13,6 +13,7 @@ import RoleManage from './pages/role/RoleManage.vue'
 import UserManage from './pages/user/UserManage.vue'
 import LiveManage from './pages/live/LiveManage.vue'
 import MenuManage from './pages/menu/menuManage.vue'
+import EnrollmentForm from './pages/live/EnrollmentForm.vue'
 let routes = [
     {
         path: '/login',
@@ -57,7 +58,13 @@ let routes = [
                 path: '/zhiboxiangmu', // 
                 component: LiveManage,
                 name: '直播项目', // 菜单显示的名称
-                hidden: false // 设为false，确保菜单显示
+                hidden: false, // 设为false，确保菜单显示
+                children: [{
+                    path: 'enrollment-form',
+                    name: 'EnrollmentForm',
+                    component: EnrollmentForm,
+                    meta: { title: '添加报名表' }
+                }]
             },
             { path: '/main', component: Main, name: '主页', hidden: true },
             { path: '/table', component: Table, name: '表格' },
