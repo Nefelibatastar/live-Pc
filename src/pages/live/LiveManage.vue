@@ -11,7 +11,7 @@
         <Col :span="18" class="btn-group">
         <i-button type="default" @click="resetQuery">清空</i-button>
         <i-button type="primary" @click="searchLive">搜索</i-button>
-        <i-button type="success" @click="createLive">创建直播</i-button>
+        <i-button type="success" @click="openCreateModal">创建直播</i-button>
         </Col>
       </Row>
     </div>
@@ -28,7 +28,7 @@
     </div>
 
     <!-- 创建直播模态框 -->
-    <Modal v-model="createModalVisible" title="创建直播" @on-ok="handleCreateSubmit" @on-cancel="handleCreateCancel"
+    <Modal v-model="liveFormState.createModalVisible" title="创建直播" @on-ok="handleCreateSubmit" @on-cancel="handleCreateCancel"
       :loading="modalLoading">
       <Form ref="createLiveForm" :model="createLiveForm" :rules="createLiveRules" :label-width="100">
         <!-- 直播名称 -->
@@ -81,7 +81,18 @@
             推荐图片尺寸为: 1000×562，支持 JPG、PNG 格式，图片大小不超过 10M
           </div>
           <!-- 添加报名表勾选框 -->
-          <router-view></router-view>
+          <div class="form-checkbox" style="margin-top: 10px;">
+            <Checkbox v-model="liveFormState.addEnrollmentForm" @change="handleEnrollmentCheck">
+              添加报名表
+            </Checkbox>
+          </div>
+
+          <!-- 勾选后显示的按钮（如果已有保存的表单，显示"编辑报名表"） -->
+          <div v-if="liveFormState.addEnrollmentForm" style="margin-top: 10px;">
+            <i-button type="primary" @click="openEnrollmentFormPage">
+              {{ enrollmentFormData ? '编辑报名表' : '添加报名表' }}
+            </i-button>
+          </div>
         </Form-item>
       </Form>
     </Modal>
@@ -172,6 +183,7 @@
 
 <script>
 import { config } from '../../config'
+import { mapState, mapMutations, mapActions } from 'vuex';
 export default {
   name: 'LiveManage',
   data() {
@@ -405,9 +417,27 @@ export default {
       // 编辑时的图片ID
       editImgId: '',
       addEnrollmentForm: false,
+      enrollmentFormData: null, // 存储已保存的报名表配置
     };
   },
+  computed: {
+    ...mapState('live', ['liveFormState'])
+  },
+  created() {
+    // 页面加载时获取直播列表
+    this.getLiveList();
+    // 页面加载时恢复状态
+    this.RESTORE_LIVE_FORM_STATE();
+  },
+  beforeRouteLeave(to, from, next) {
+    // 离开页面时保存状态到Vuex和localStorage
+    this.saveLiveFormState();
+    next();
+  },
   methods: {
+    ...mapMutations('live', ['UPDATE_LIVE_FORM_STATE', 'RESTORE_LIVE_FORM_STATE']),
+    ...mapActions('live', ['saveLiveFormState']),
+
     // 判断是否可以显示流地址
     canShowStreamUrl(row) {
       // 如果直播已开播，可以查看地址
@@ -480,6 +510,7 @@ export default {
         coverUrl: ''
       };
       this.imgId = ''
+
     },
     handleDatePicker(time) {
       this.createLiveForm.startTime = time;
@@ -655,7 +686,37 @@ export default {
       this.editLiveForm.coverUrl = '';
       this.editImgId = '';
     },
-
+    // 处理复选框变化
+    handleEnrollmentCheck(checked) {
+      // 更新Vuex中的状态
+      this.UPDATE_LIVE_FORM_STATE({
+        addEnrollmentForm: checked
+      });
+    },
+    openEnrollmentFormPage() {
+      // 跳转时携带当前直播ID（如果需要关联具体直播）
+      this.$router.push({
+        path: '/enrollment-form',
+        query: { liveId: this.currentLiveId } // 假设当前直播ID为currentLiveId
+      });
+    },
+    // 提交直播创建时，同步保存报名表状态
+    submitLiveForm() {
+      // 原有提交逻辑...
+      if (this.addEnrollmentForm && this.enrollmentFormData) {
+        // 这里可以将this.enrollmentFormData提交到后端，关联当前直播
+        console.log('提交报名表数据:', this.enrollmentFormData);
+        // if (success) {
+        //   // 清空保存的状态
+        //   localStorage.removeItem('liveFormState');
+        //   this.UPDATE_LIVE_FORM_STATE({
+        //     addEnrollmentForm: false,
+        //     createModalVisible: false,
+        //     formData: {}
+        //   });
+        // }
+      }
+    },
     // 提交编辑表单
     handleEditSubmit() {
       this.editModalLoading = true;
@@ -798,25 +859,21 @@ export default {
       // 在新标签页打开
       window.open(playerUrl, '_blank');
     },
-    // 处理勾选事件
-    handleEnrollmentCheck(checked) {
-      this.addEnrollmentForm = checked;
+    // 打开创建弹框
+    openCreateModal() {
+      // 更新Vuex状态，显示弹框
+      this.UPDATE_LIVE_FORM_STATE({
+        createModalVisible: true
+      });
     },
 
-    // 打开报名表编辑页面
-    openEnrollmentFormPage() {
-      // 可以选择在当前页面打开弹窗或者跳转到新页面
-      // 这里演示跳转到新页面
-      this.$router.push('/zhiboxiangmu/enrollment-form')
-
-      // 如果需要在当前页面打开弹窗，可以使用:
-      // this.enrollmentFormVisible = true;
-    },
+    // 关闭创建弹框
+    closeCreateModal() {
+      this.UPDATE_LIVE_FORM_STATE({
+        createModalVisible: false
+      });
+    }
   },
-  created() {
-    // 页面加载时获取直播列表
-    this.getLiveList();
-  }
 };
 </script>
 

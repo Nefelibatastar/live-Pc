@@ -59,12 +59,11 @@ let routes = [
                 component: LiveManage,
                 name: '直播项目', // 菜单显示的名称
                 hidden: false, // 设为false，确保菜单显示
-                children: [{
-                    path: 'enrollment-form',
-                    name: 'EnrollmentForm',
-                    component: EnrollmentForm,
-                    meta: { title: '添加报名表' }
-                }]
+            },
+            {
+                path: '/enrollment-form',
+                component: EnrollmentForm,
+                name: '添加报名表'
             },
             { path: '/main', component: Main, name: '主页', hidden: true },
             { path: '/table', component: Table, name: '表格' },
