@@ -4,7 +4,7 @@ export default {
     liveFormState: {
       addEnrollmentForm: false, // 必须初始化，避免 undefined
       createModalVisible: false,
-      formData: {}
+      tableFormat: null
     }
   },
   mutations: {

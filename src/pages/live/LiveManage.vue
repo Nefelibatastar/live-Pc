@@ -28,8 +28,8 @@
     </div>
 
     <!-- 创建直播模态框 -->
-    <Modal v-model="liveFormState.createModalVisible" title="创建直播" @on-ok="handleCreateSubmit" @on-cancel="handleCreateCancel"
-      :loading="modalLoading">
+    <Modal v-model="liveFormState.createModalVisible" title="创建直播" @on-ok="handleCreateSubmit"
+      @on-cancel="handleCreateCancel" :loading="modalLoading">
       <Form ref="createLiveForm" :model="createLiveForm" :rules="createLiveRules" :label-width="100">
         <!-- 直播名称 -->
         <Form-item label="直播名称" prop="liveShowName">
@@ -706,6 +706,7 @@ export default {
       if (this.addEnrollmentForm && this.enrollmentFormData) {
         // 这里可以将this.enrollmentFormData提交到后端，关联当前直播
         console.log('提交报名表数据:', this.enrollmentFormData);
+        const { tableFormat } = this.liveFormState;
         // if (success) {
         //   // 清空保存的状态
         //   localStorage.removeItem('liveFormState');
@@ -766,29 +767,32 @@ export default {
         if (valid) {
 
           if (this.createLiveForm.liveShowName && this.createLiveForm.startTime) {
-            this.modalLoading = true;
+            const { tableFormat } = this.liveFormState;
             const param = {
               liveShowName: this.createLiveForm.liveShowName,
               startTime: this.createLiveForm.startTime,
-              liveCover: this.imgId
-            }
-            this.$api.addLive(param)
-              .then(res => {
-                if (res.code === 200) {
-                  this.$Message.success('创建直播成功');
-                  this.createModalVisible = false;
-                  this.getLiveList(); // 刷新列表
-                } else {
-                  this.$Message.error('创建失败：' + res.message);
-                }
-              })
-              .catch(err => {
-                console.error('创建直播接口报错：', err);
-                this.$Message.error('网络错误，请重试');
-              })
-              .finally(() => {
-                this.modalLoading = false;
-              });
+              liveCover: this.imgId,      // 原有的直播信息参数
+              tableFormat: tableFormat // 新增的表单配置字段
+            };
+            console.log('打印下',param)
+            this.modalLoading = true;
+            // this.$api.addLive(param)
+            //   .then(res => {
+            //     if (res.code === 200) {
+            //       this.$Message.success('创建直播成功');
+            //       this.createModalVisible = false;
+            //       this.getLiveList(); // 刷新列表
+            //     } else {
+            //       this.$Message.error('创建失败：' + res.message);
+            //     }
+            //   })
+            //   .catch(err => {
+            //     console.error('创建直播接口报错：', err);
+            //     this.$Message.error('网络错误，请重试');
+            //   })
+            //   .finally(() => {
+            //     this.modalLoading = false;
+            //   });
           } else {
             this.$Message.error('请填写必填项');
           }

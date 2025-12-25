@@ -14,112 +14,113 @@
     <Row :gutter="20" class="form-layout">
       <!-- 左侧：组件添加区 -->
       <Col :span="6" class="form-column">
-        <div class="column-title">添加组件</div>
+      <div class="column-title">添加组件</div>
 
-        <div class="component-group">
-          <h3>联系人组件</h3>
-          <div class="component-list">
-            <i-button type="default" @click="addField('name')">姓名</i-button>
-            <i-button type="default" @click="addField('phone')">电话</i-button>
-            <i-button type="default" @click="addField('gender')">性别</i-button>
-            <i-button type="default" @click="addField('age')">年龄</i-button>
-            <i-button type="default" @click="addField('birthday')">出生年月</i-button>
-            <i-button type="default" @click="addField('email')">邮箱</i-button>
-            <i-button type="default" @click="addField('idCard')">身份证</i-button>
-          </div>
+      <div class="component-group">
+        <h3>联系人组件</h3>
+        <div class="component-list">
+          <i-button type="default" @click="addField('name')">姓名</i-button>
+          <i-button type="default" @click="addField('phone')">电话</i-button>
+          <i-button type="default" @click="addField('gender')">性别</i-button>
+          <i-button type="default" @click="addField('age')">年龄</i-button>
+          <i-button type="default" @click="addField('birthday')">出生年月</i-button>
+          <i-button type="default" @click="addField('email')">邮箱</i-button>
+          <i-button type="default" @click="addField('idCard')">身份证</i-button>
         </div>
+      </div>
 
-        <div class="component-group">
-          <h3>自定义组件</h3>
-          <div class="component-list">
-            <i-button type="default" @click="addField('text')">文本框</i-button>
-          </div>
+      <div class="component-group">
+        <h3>自定义组件</h3>
+        <div class="component-list">
+          <i-button type="default" @click="addField('text')">文本框</i-button>
         </div>
+      </div>
       </Col>
 
       <!-- 中间：已选字段与预览区 -->
       <Col :span="8" class="form-column">
-        <div class="column-title">已选字段预览</div>
-        <div class="preview-list">
-          <div v-for="(field, index) in formFields" :key="index"
-            :class="['preview-item', { 'active': currentIndex === index }]" @click="selectField(index)">
-            <div class="field-header">
-              <!-- 必填星号 + 纯文本序号 -->
-              <span class="required-star" v-if="field.required">*</span>
-              <span class="field-number">{{ (index + 1).toString().padStart(2, '0') }}</span>
-              <span class="field-name">{{ field.name }}</span>
-              <i-button type="error" size="small" @click.stop="removeField(index)" icon="ios-trash"></i-button>
-            </div>
-            <div class="field-content">
-              <!-- 性别预览：禁用的单选框，一行显示 -->
-              <template v-if="field.type === 'gender'">
-                <Radio-group class="gender-radio-group">
-                  <Radio label="male" disabled>男</Radio>
-                  <Radio label="female" disabled>女</Radio>
-                </Radio-group>
-              </template>
-              <template v-else-if="field.type === 'birthday'">
-                <Date-picker type="date" :placeholder="field.placeholder" disabled></Date-picker>
-              </template>
-              <template v-else>
-                <Input :placeholder="field.placeholder" disabled></Input>
-              </template>
-            </div>
+      <div class="column-title">已选字段预览</div>
+      <div class="preview-list">
+        <div v-for="(field, index) in formFields" :key="index"
+          :class="['preview-item', { 'active': currentIndex === index }]" @click="selectField(index)">
+          <div class="field-header">
+            <!-- 必填星号 + 纯文本序号 -->
+            <span class="required-star" v-if="field.required">*</span>
+            <span class="field-number">{{ (index + 1).toString().padStart(2, '0') }}</span>
+            <span class="field-name">{{ field.name }}</span>
+            <i-button type="error" size="small" @click.stop="removeField(index)" icon="ios-trash"></i-button>
           </div>
-          <div v-if="formFields.length === 0" class="empty-tip">
-            暂无字段，请从左侧添加
+          <div class="field-content">
+            <!-- 性别预览：禁用的单选框，一行显示 -->
+            <template v-if="field.type === 'gender'">
+              <Radio-group class="gender-radio-group">
+                <Radio label="male" disabled>男</Radio>
+                <Radio label="female" disabled>女</Radio>
+              </Radio-group>
+            </template>
+            <template v-else-if="field.type === 'birthday'">
+              <Date-picker type="date" :placeholder="field.placeholder" disabled></Date-picker>
+            </template>
+            <template v-else>
+              <Input :placeholder="field.placeholder" disabled></Input>
+            </template>
           </div>
         </div>
+        <div v-if="formFields.length === 0" class="empty-tip">
+          暂无字段，请从左侧添加
+        </div>
+      </div>
       </Col>
 
       <!-- 右侧：编辑区 -->
       <Col :span="10" class="form-column">
-        <div class="column-title">字段属性配置</div>
+      <div class="column-title">字段属性配置</div>
 
-        <div class="edit-section" v-if="currentIndex !== -1">
-          <Form :model="currentField" :label-width="75" class="edit-form">
-            <Form-item label="控件名称">
-              <Input v-model="currentField.name" :disabled="isContactField(currentField.type)"
-                placeholder="请输入控件名称"></Input>
-            </Form-item>
+      <div class="edit-section" v-if="currentIndex !== -1">
+        <Form :model="currentField" :label-width="75" class="edit-form">
+          <Form-item label="控件名称">
+            <Input v-model="currentField.name" :disabled="isContactField(currentField.type)"
+              placeholder="请输入控件名称"></Input>
+          </Form-item>
 
-            <!-- 非性别字段：提示信息输入框 -->
-            <Form-item label="提示信息" v-if="currentField.type !== 'gender'">
-              <Input v-model="currentField.placeholder" placeholder="请输入提示信息"></Input>
-            </Form-item>
+          <!-- 非性别字段：提示信息输入框 -->
+          <Form-item label="提示信息" v-if="currentField.type !== 'gender'">
+            <Input v-model="currentField.placeholder" placeholder="请输入提示信息"></Input>
+          </Form-item>
 
-            <!-- 性别字段：选项配置（一行显示禁用的input） -->
-            <Form-item label="选项配置" v-if="currentField.type === 'gender'">
-              <div class="gender-option-inputs">
-                <div class="option-item">
-                  <span>选项A：</span>
-                  <Input v-model="genderOptions.male" disabled :readonly="true" style="width: 80px;" />
-                </div>
-                <div class="option-item">
-                  <span>选项B：</span>
-                  <Input v-model="genderOptions.female" disabled :readonly="true" style="width: 80px;" />
-                </div>
+          <!-- 性别字段：选项配置（一行显示禁用的input） -->
+          <Form-item label="选项配置" v-if="currentField.type === 'gender'">
+            <div class="gender-option-inputs">
+              <div class="option-item">
+                <span>选项A：</span>
+                <Input v-model="genderOptions.male" disabled :readonly="true" style="width: 80px;" />
               </div>
-            </Form-item>
-
-            <!-- 是否必填：改用i-switch，开关在前+文字“必填” -->
-            <Form-item label="必填设置">
-              <div class="required-switch-wrap">
-                <i-switch v-model="currentField.required" @on-change="handleRequiredChange"></i-switch>
-                <span class="required-text">必填</span>
+              <div class="option-item">
+                <span>选项B：</span>
+                <Input v-model="genderOptions.female" disabled :readonly="true" style="width: 80px;" />
               </div>
-            </Form-item>
-          </Form>
-        </div>
-        <div v-else class="edit-placeholder">
-          请从中间选择一个字段进行配置
-        </div>
+            </div>
+          </Form-item>
+
+          <!-- 是否必填：改用i-switch，开关在前+文字“必填” -->
+          <Form-item label="必填设置">
+            <div class="required-switch-wrap">
+              <i-switch v-model="currentField.required" @on-change="handleRequiredChange"></i-switch>
+              <span class="required-text">必填</span>
+            </div>
+          </Form-item>
+        </Form>
+      </div>
+      <div v-else class="edit-placeholder">
+        请从中间选择一个字段进行配置
+      </div>
       </Col>
     </Row>
   </div>
 </template>
 
 <script>
+import { mapState } from 'vuex';
 export default {
   data() {
     return {
@@ -132,6 +133,11 @@ export default {
         female: '女'
       }
     };
+  },
+  computed: {
+    ...mapState({
+      liveFormState: state => state.live.liveFormState
+    })
   },
   watch: {
     currentIndex(newVal) {
@@ -225,9 +231,20 @@ export default {
         this.$Message.warning('请至少添加一个字段');
         return;
       }
-      console.log('保存的表单配置:', this.formFields);
+
+      // 1. 将表单配置存入Vuex状态管理
+      this.$store.commit('UPDATE_LIVE_FORM_STATE', {
+        tableFormat: this.formFields
+      });
+
+      // 2. 提示保存成功
       this.$Message.success('报名表保存成功');
-    }
+
+      // 3. 返回上一页（创建直播弹框所在页面）
+      setTimeout(() => {
+        this.$router.go(-1);
+      }, 500);
+    },
   }
 };
 </script>
@@ -237,8 +254,10 @@ export default {
   padding: 20px;
   background-color: #fff;
   min-height: calc(100vh - 40px);
-  padding-bottom: 40px; /* 底部增加安全间距 */
-  box-sizing: border-box; /* 保证padding不会超出视口 */
+  padding-bottom: 40px;
+  /* 底部增加安全间距 */
+  box-sizing: border-box;
+  /* 保证padding不会超出视口 */
 }
 
 .form-header {
@@ -251,7 +270,8 @@ export default {
 }
 
 .form-layout {
-  height: calc(100vh - 160px); /* 减少高度，预留底部安全区域 */
+  height: calc(100vh - 160px);
+  /* 减少高度，预留底部安全区域 */
   box-sizing: border-box;
 }
 
@@ -260,9 +280,11 @@ export default {
   border-radius: 4px;
   padding: 15px;
   height: 100%;
-  overflow-y: auto; /* 确保内容过多时可滚动 */
+  overflow-y: auto;
+  /* 确保内容过多时可滚动 */
   box-sizing: border-box;
-  padding-bottom: 20px; /* 列内部底部安全间距 */
+  padding-bottom: 20px;
+  /* 列内部底部安全间距 */
 }
 
 .column-title {
@@ -286,7 +308,8 @@ export default {
 
 .preview-list {
   margin-top: 10px;
-  padding-bottom: 30px; /* 预览列表底部增加安全间距 */
+  padding-bottom: 30px;
+  /* 预览列表底部增加安全间距 */
 }
 
 .preview-item {
@@ -355,7 +378,8 @@ export default {
   padding: 15px;
   border-radius: 4px;
   margin-top: 10px;
-  margin-bottom: 20px; /* 编辑区底部增加间距 */
+  margin-bottom: 20px;
+  /* 编辑区底部增加间距 */
 }
 
 /* 性别选项配置：一行显示两个input */
@@ -390,7 +414,8 @@ export default {
   margin-top: 10px;
   text-align: center;
   color: #888;
-  margin-bottom: 20px; /* 占位符底部增加间距 */
+  margin-bottom: 20px;
+  /* 占位符底部增加间距 */
 }
 
 .edit-form {
@@ -402,10 +427,12 @@ export default {
   width: 6px;
   height: 6px;
 }
+
 ::-webkit-scrollbar-thumb {
   border-radius: 3px;
   background: #ccc;
 }
+
 ::-webkit-scrollbar-track {
   background: #f5f7f9;
 }
