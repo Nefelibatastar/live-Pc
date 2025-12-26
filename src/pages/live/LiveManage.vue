@@ -427,6 +427,13 @@ export default {
     // 页面加载时获取直播列表
     this.getLiveList();
     // 页面加载时恢复状态
+    if (this.$route.query.hasNewForm === 'true') {
+      this.$Message.info('已有新增报名表');
+      // 清除参数，避免刷新后重复提示
+      this.$router.replace({
+        query: { ...this.$route.query, hasNewForm: undefined }
+      });
+    }
     this.RESTORE_LIVE_FORM_STATE();
   },
   beforeRouteLeave(to, from, next) {
@@ -700,24 +707,6 @@ export default {
         query: { liveId: this.currentLiveId } // 假设当前直播ID为currentLiveId
       });
     },
-    // 提交直播创建时，同步保存报名表状态
-    submitLiveForm() {
-      // 原有提交逻辑...
-      if (this.addEnrollmentForm && this.enrollmentFormData) {
-        // 这里可以将this.enrollmentFormData提交到后端，关联当前直播
-        console.log('提交报名表数据:', this.enrollmentFormData);
-        const { tableFormat } = this.liveFormState;
-        // if (success) {
-        //   // 清空保存的状态
-        //   localStorage.removeItem('liveFormState');
-        //   this.UPDATE_LIVE_FORM_STATE({
-        //     addEnrollmentForm: false,
-        //     createModalVisible: false,
-        //     formData: {}
-        //   });
-        // }
-      }
-    },
     // 提交编辑表单
     handleEditSubmit() {
       this.editModalLoading = true;
@@ -774,7 +763,7 @@ export default {
               liveCover: this.imgId,      // 原有的直播信息参数
               tableFormat: tableFormat // 新增的表单配置字段
             };
-            console.log('打印下',param)
+            console.log('打印下', param)
             this.modalLoading = true;
             // this.$api.addLive(param)
             //   .then(res => {

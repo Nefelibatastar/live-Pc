@@ -120,7 +120,8 @@
 </template>
 
 <script>
-import { mapState } from 'vuex';
+import { mapState, mapMutations, mapActions } from 'vuex';
+
 export default {
   data() {
     return {
@@ -160,6 +161,7 @@ export default {
     }
   },
   methods: {
+    ...mapMutations('live', ['UPDATE_LIVE_FORM_STATE', 'RESTORE_LIVE_FORM_STATE']),
     addField(type) {
       const fieldConfig = {
         name: { type: 'name', name: '姓名', placeholder: '请输入姓名', required: true }, // 默认必填
@@ -233,17 +235,16 @@ export default {
       }
 
       // 1. 将表单配置存入Vuex状态管理
-      this.$store.commit('UPDATE_LIVE_FORM_STATE', {
+      this.UPDATE_LIVE_FORM_STATE({
         tableFormat: this.formFields
       });
-
-      // 2. 提示保存成功
+      console.log('当前liveFormState信息：', this.liveFormState);
       this.$Message.success('报名表保存成功');
 
       // 3. 返回上一页（创建直播弹框所在页面）
-      setTimeout(() => {
-        this.$router.go(-1);
-      }, 500);
+      // setTimeout(() => {
+      //   this.$router.go(-1);
+      // }, 500);
     },
   }
 };
