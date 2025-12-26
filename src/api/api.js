@@ -43,7 +43,7 @@ const api = {
   // 直播相关
   // liveStream/list 查询直播创建和推/播流信息
   list: (params) => request.get(`${base}/liveStream/list`, { params }),
-  // liveStream/add 新增直播创建和推/播流信息
+  // liveStream/addLive 新增直播创建和推/播流信息
   addLive: (params) => request.post(`${base}/liveStream/add`, params),
   // liveStream/update 修改直播创建和推/播流信息
   updateLive: (params) => request.put(`${base}/liveStream/update`, params),
