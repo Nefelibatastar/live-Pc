@@ -27,28 +27,27 @@
       </div>
     </div>
 
-    <!-- 创建/编辑直播模态框 - 改造为标签页形式 -->
+    <!-- 创建/编辑直播模态框 标签页形式 -->
     <Modal v-model="liveFormState.createModalVisible" :title="isEditMode ? '修改直播' : '创建直播'" @on-ok="handleFormSubmit"
       @on-cancel="handleCreateCancel" :loading="modalLoading" width="1000">
       <!-- 标签页组件 -->
       <Tabs v-model="activeTab">
         <TabPane name="tab1" label="直播信息"></TabPane>
-        <TabPane name="tab2" label="报名表设置" :disabled="liveFormState.addEnrollmentForm ? false : true"></TabPane>
+        <TabPane name="tab2" label="报名表设置" :disabled="!liveFormState.addEnrollmentForm"></TabPane>
       </Tabs>
       <!-- 标签页内容 -->
       <div v-show="activeTab === 'tab1'">
         <Form ref="liveForm" :model="currentLiveForm" :rules="createLiveRules" :label-width="100">
-          <!-- 直播名称 -->
+          <!-- 直播名称 - 允许修改 -->
           <Form-item label="直播名称" prop="liveShowName">
-            <Input v-model="currentLiveForm.liveShowName" placeholder="请输入直播名称" :maxlength="100" show-word-limit
-              :disabled="isEditMode"></Input>
+            <Input v-model="currentLiveForm.liveShowName" placeholder="请输入直播名称" :maxlength="100" show-word-limit>
+            </Input>
           </Form-item>
-          <!-- 开始时间 -->
+          <!-- 开始时间 - 禁止修改 -->
           <Form-item label="开始时间" prop="startTime">
             <DatePicker type="datetime" v-model="currentLiveForm.startTime" placeholder="选择日期和时间"
-              @on-change="handleDatePicker" format="yyyy-MM-dd HH:mm:ss" style="width: 100%" :options="{
+              format="yyyy-MM-dd HH:mm:ss" value-format="yyyy-MM-dd HH:mm:ss" style="width: 100%" :options="{
                 disabledDate(date) {
-                  // 禁止选择过去的时间
                   return date && date.valueOf() < Date.now() - 86400000;
                 }
               }" :disabled="isEditMode">
@@ -61,16 +60,10 @@
           <!-- 直播封面 -->
           <Form-item label="直播封面" prop="liveCover">
             <div class="cover-upload">
-              <!-- 手动文件选择 -->
-              <!-- <input type="file" :ref="isEditMode ? 'editFileInput' : 'fileInput'"
-                @change="isEditMode ? handleEditFileSelect : handleFileSelect" accept="image/jpeg, image/png"
-                style="display: none"> -->
               <input type="file" ref="fileInput" @change="handleFileSelect" accept="image/jpeg, image/png"
                 style="display: none" v-if="!isEditMode">
-              <!-- 编辑模式的文件输入框 -->
               <input type="file" ref="editFileInput" @change="handleEditFileSelect" accept="image/jpeg, image/png"
                 style="display: none" v-if="isEditMode">
-              <!-- 上传区域：有图片时显示缩略图，无图片时显示上传图标 -->
               <div class="upload-area" v-if="!currentLiveForm.liveCover"
                 @click="$refs[isEditMode ? 'editFileInput' : 'fileInput'].click()">
                 <div class="upload-icon">
@@ -78,11 +71,9 @@
                 </div>
                 <div class="upload-text">选择图片</div>
               </div>
-              <!-- 预览区域：有图片时显示 -->
               <div class="preview-area" v-else>
                 <div class="preview-wrapper" @click="previewImage">
                   <img :src="currentLiveForm.liveCover" class="preview-thumb" alt="直播封面">
-                  <!-- 删除图标 -->
                   <div class="delete-icon" @click.stop="isEditMode ? removeEditCoverImage : removeCoverImage">
                     <i class="el-icon-close"></i>
                   </div>
@@ -94,8 +85,8 @@
               推荐图片尺寸为: 1000×562，支持 JPG、PNG 格式，图片大小不超过 10M
             </div>
 
-            <!-- 添加报名表勾选框 -->
-            <div class="form-checkbox" style="margin-top: 10px;" v-if="!isEditMode">
+            <!-- 报名表勾选 - 编辑模式也可修改 -->
+            <div class="form-checkbox" style="margin-top: 10px;">
               <Checkbox v-model="liveFormState.addEnrollmentForm" @change="handleEnrollmentCheck">
                 添加报名表
               </Checkbox>
@@ -136,14 +127,12 @@
             <div v-for="(field, index) in tableFormat" :key="index"
               :class="['preview-item', { 'active': currentIndex === index }]" @click="selectField(index)">
               <div class="field-header">
-                <!-- 必填星号 + 纯文本序号 -->
                 <span class="required-star" v-if="field.required">*</span>
                 <span class="field-number">{{ (index + 1).toString().padStart(2, '0') }}</span>
                 <span class="field-name">{{ field.name }}</span>
                 <i-button type="error" size="small" @click.stop="removeField(index)" icon="ios-trash"></i-button>
               </div>
               <div class="field-content">
-                <!-- 性别预览：禁用的单选框，一行显示 -->
                 <template v-if="field.type === 'gender'">
                   <Radio-group class="gender-radio-group">
                     <Radio label="male" disabled>男</Radio>
@@ -175,12 +164,10 @@
                   placeholder="请输入控件名称"></Input>
               </Form-item>
 
-              <!-- 非性别字段：提示信息输入框 -->
               <Form-item label="提示信息" v-if="currentField.type !== 'gender'">
                 <Input v-model="currentField.placeholder" placeholder="请输入提示信息"></Input>
               </Form-item>
 
-              <!-- 性别字段：选项配置（一行显示禁用的input） -->
               <Form-item label="选项配置" v-if="currentField.type === 'gender'">
                 <div class="gender-option-inputs">
                   <div class="option-item">
@@ -194,7 +181,6 @@
                 </div>
               </Form-item>
 
-              <!-- 是否必填：改用i-switch，开关在前+文字“必填” -->
               <Form-item label="必填设置">
                 <div class="required-switch-wrap">
                   <i-switch v-model="currentField.required" @on-change="handleRequiredChange"></i-switch>
@@ -263,29 +249,33 @@ import { mapState, mapMutations, mapActions } from 'vuex';
 export default {
   name: 'LiveManage',
   data() {
-    // 验证不包含中文的正则表达式
     const noChineseValidator = (rule, value, callback) => {
       callback();
     };
+
+    // 自定义时间验证器，处理禁用状态下的验证
+    // const validateStartTime = (rule, value, callback) => {
+    //   if (value) {
+    //     callback();
+    //   } else {
+    //     callback(new Error('请选择开始时间'));
+    //   }
+    // };
+
     return {
       self: this,
-      uploading: false, // 上传状态
-      // 表格数据
+      uploading: false,
       tableData: [],
       currentId: '',
       total: 0,
-      // 分页参数
       pageNum: 1,
       pageSize: 10,
-      // 查询表单
       queryForm: {
         liveShowName: ''
       },
       imgId: '',
-      // 标签页状态
       activeTab: 'tab1',
       isEditMode: false,
-      // 推流地址模态框相关
       streamUrlModalVisible: false,
       streamUrlModal: false,
       currentStreamUrls: {
@@ -294,22 +284,24 @@ export default {
         pullRtmpUrl: '',
         pushRtmpUrl: ''
       },
-      // 图片预览相关
       previewModalVisible: false,
       previewImageUrl: '',
       modalLoading: false,
-      // 表单验证规则
       createLiveRules: {
         liveShowName: [
           { required: true, message: '请输入直播名称', trigger: 'blur' },
           { max: 100, message: '直播名称不能超过100个字符', trigger: 'blur' },
           { validator: noChineseValidator, trigger: 'blur' }
         ],
-        startTime: [
-          { required: true, message: '请选择开始时间', trigger: ['change', 'blur'] }
-        ]
+        // startTime: [
+        //   {
+        //     required: true,
+        //     message: '请选择开始时间',
+        //     trigger: ['change', 'blur'],
+        //     validator: validateStartTime // 使用自定义验证器
+        //   }
+        // ]
       },
-      // 表格列配置
       tableColumns: [
         {
           title: '直播名称',
@@ -462,16 +454,13 @@ export default {
           }
         }
       ],
-      // 直播表单数据 (创建和编辑共用)
       currentLiveForm: {
         id: '',
         liveShowName: '',
         startTime: '',
         liveCover: ''
       },
-      // 编辑时的图片ID
       editImgId: '',
-      // 报名表相关数据
       tableFormat: [],
       currentIndex: -1,
       currentField: {},
@@ -485,12 +474,26 @@ export default {
     ...mapState('live', ['liveFormState'])
   },
   created() {
-    // 页面加载时获取直播列表
+    this.createLiveRules.startTime = [
+      {
+        required: true,
+        message: '请选择开始时间',
+        trigger: ['change', 'blur'],
+        validator: (rule, value, callback) => {
+          // 如果是编辑模式，自动通过验证（因为时间不能修改）
+          if (this.isEditMode) {
+            callback();
+          } else if (value) {
+            callback();
+          } else {
+            callback(new Error('请选择开始时间'));
+          }
+        }
+      }
+    ];
     this.getLiveList();
-    // 页面加载时恢复状态
     if (this.$route.query.hasNewForm === 'true') {
       this.$Message.info('已有新增报名表');
-      // 清除参数，避免刷新后重复提示
       this.$router.replace({
         query: { ...this.$route.query, hasNewForm: undefined }
       });
@@ -498,7 +501,6 @@ export default {
     this.RESTORE_LIVE_FORM_STATE();
   },
   beforeRouteLeave(to, from, next) {
-    // 离开页面时保存状态到Vuex和localStorage
     this.saveLiveFormState();
     next();
   },
@@ -506,13 +508,11 @@ export default {
     currentIndex(newVal) {
       if (newVal !== -1) {
         this.currentField = JSON.parse(JSON.stringify(this.tableFormat[newVal]));
-        // 初始化必填状态（防止undefined）
         if (this.currentField.required === undefined) {
-          this.currentField.required = true; // 默认必填
+          this.currentField.required = true;
         }
       }
     },
-    // 实时同步当前编辑字段到列表中
     currentField: {
       handler(newVal) {
         if (this.currentIndex !== -1 && this.tableFormat[this.currentIndex]) {
@@ -520,18 +520,25 @@ export default {
         }
       },
       deep: true
+    },
+    // 监听报名表勾选状态变化
+    'liveFormState.addEnrollmentForm'(checked) {
+      // 取消勾选时清空报名表内容
+      if (!checked) {
+        this.tableFormat = [];
+        this.currentIndex = -1;
+        this.currentField = {};
+      }
     }
   },
   methods: {
     ...mapMutations('live', ['UPDATE_LIVE_FORM_STATE', 'RESTORE_LIVE_FORM_STATE']),
     ...mapActions('live', ['saveLiveFormState']),
 
-    // 判断是否为联系人字段（非自定义文本框）
     isContactField(type) {
       return ['name', 'phone', 'gender', 'age', 'birthday', 'email', 'idCard'].includes(type);
     },
 
-    // 添加表单字段
     addField(type) {
       const fieldConfig = {
         name: { type: 'name', name: '姓名', placeholder: '请输入姓名', required: true },
@@ -544,7 +551,6 @@ export default {
         text: { type: 'text', name: `自定义文本框`, placeholder: '请输入内容', required: true }
       };
 
-      // 联系人组件只能添加一次
       if (type !== 'text') {
         const isExist = this.tableFormat.some(field => field.type === type);
         if (isExist) {
@@ -557,23 +563,19 @@ export default {
       this.$Message.success('添加成功');
     },
 
-    // 选择字段
     selectField(index) {
       this.currentIndex = index;
     },
 
-    // 移除字段
     removeField(index) {
       this.$Modal.confirm({
         title: '确认删除',
         content: `确定要删除【${this.tableFormat[index].name}】吗？`,
         onOk: () => {
-          // 如果删除的是当前选中项，重置编辑状态
           if (this.currentIndex === index) {
             this.currentIndex = -1;
             this.currentField = {};
           } else if (this.currentIndex > index) {
-            // 调整选中索引
             this.currentIndex--;
           }
           this.tableFormat.splice(index, 1);
@@ -582,32 +584,26 @@ export default {
       });
     },
 
-    // 必填开关变化事件
     handleRequiredChange(checked) {
       this.currentField.required = checked;
     },
 
-    // 判断是否可以显示流地址
     canShowStreamUrl(row) {
-      // 如果直播已开播，可以查看地址
       if (row.liveStatus === "1") {
         return true;
       }
 
-      // 如果直播未开播，检查时间是否超过开始时间+1小时
       if (row.liveStatus === "0" && row.startTime) {
         const startTime = new Date(row.startTime).getTime();
         const currentTime = new Date().getTime();
-        const oneHour = 60 * 60 * 1000; // 1小时的毫秒数
+        const oneHour = 60 * 60 * 1000;
 
-        // 如果当前时间不超过开始时间+1小时，可以查看
         return currentTime <= startTime + oneHour;
       }
 
       return false;
     },
 
-    // 获取直播列表
     getLiveList() {
       const params = {
         pageNum: this.pageNum,
@@ -628,60 +624,47 @@ export default {
           this.$Message.error('网络错误，请重试');
         });
     },
-    // 搜索直播
     searchLive() {
-      this.pageNum = 1; // 重置为第一页
+      this.pageNum = 1;
       this.getLiveList();
     },
-    // 重置搜索条件
     resetQuery() {
       this.queryForm = { liveShowName: '' };
       this.pageNum = 1;
       this.getLiveList();
     },
-    // 分页改变
     handlePageChange(page) {
       this.pageNum = page;
       this.getLiveList();
     },
-    // 每页条数改变
     handlePageSizeChange(size) {
       this.pageSize = size;
-      this.pageNum = 1; // 重置为第一页
+      this.pageNum = 1;
       this.getLiveList();
     },
-    // 处理日期选择
     handleDatePicker(time) {
       this.currentLiveForm.startTime = time;
-      // 手动触发表单验证
       this.$refs.liveForm.validateField('startTime');
     },
-    // 处理文件选择
     handleFileSelect(event) {
       const file = event.target.files[0];
       if (!file) return;
 
-      // 校验文件类型
       const isJPG = file.type === 'image/jpeg' || file.type === 'image/png';
       if (!isJPG) {
         this.$Message.error('请上传JPG或PNG格式的图片');
         return;
       }
 
-      // 校验文件大小（10M）
       const isLt10M = file.size / 1024 / 1024 <= 10;
       if (!isLt10M) {
         this.$Message.error('图片大小不能超过10M');
         return;
       }
 
-      // 调用上传接口
       this.uploadFile(file);
-
-      // 清空 input，允许重复选择同一文件
       event.target.value = '';
     },
-    // 上传文件
     uploadFile(file) {
       this.uploading = true;
 
@@ -706,7 +689,6 @@ export default {
         });
     },
 
-    // 通用的图片预览方法
     previewCoverImage(imgUrl) {
       if (!imgUrl) {
         this.$Message.warning('暂无图片可预览');
@@ -717,53 +699,50 @@ export default {
       this.previewModalVisible = true;
     },
 
-    // 预览图片
     previewImage() {
       this.previewCoverImage(this.currentLiveForm.liveCover);
     },
 
-    // 删除已上传的图片
     removeCoverImage() {
       this.currentLiveForm.liveCover = '';
       this.imgId = '';
-      // 如果需要同时删除服务器上的文件，可以调用删除接口
       this.$api.delete(this.imgId);
     },
 
-    // 编辑时删除图片
     removeEditCoverImage() {
       this.currentLiveForm.liveCover = '';
       this.editImgId = '';
     },
 
-    // 打开编辑直播模态框
+    // 修复编辑功能 - 打开模态框并完善数据回显
     editLive(index) {
       const live = this.tableData[index];
       this.isEditMode = true;
       this.activeTab = 'tab1';
+      // 回显基础信息
       this.currentLiveForm = {
         id: live.id,
         liveShowName: live.liveShowName,
         startTime: live.startTime,
         liveCover: live.liveCover ? `/api/sysFile/image/${live.liveCover}` : ''
       };
-      // 回显图片ID
+      // console.log('11',live.startTime,this.currentLiveForm.startTime)
+      // 回显图片
       this.editImgId = live.liveCover || '';
       // 回显报名表数据
-      this.liveFormState.addEnrollmentForm = live.hasEnrollment || false;
-      this.tableFormat = live.enrollmentForm && live.enrollmentForm.tableFormat || [];
+      this.liveFormState.addEnrollmentForm = live.isEntryFrom === '1';
+      // 处理报名表字段数据回显
+      this.tableFormat = live.entryFromData && JSON.parse(JSON.stringify(live.entryFromData)) || [];
       // 打开模态框
-      // this.UPDATE_LIVE_FORM_STATE({
-      //   createModalVisible: true
-      // });
+      this.UPDATE_LIVE_FORM_STATE({
+        createModalVisible: true
+      });
     },
 
-    // 编辑时处理文件选择
     handleEditFileSelect(event) {
       const file = event.target.files[0];
       if (!file) return;
 
-      // 复用创建时的文件校验逻辑
       const isJPG = file.type === 'image/jpeg' || file.type === 'image/png';
       if (!isJPG) {
         this.$Message.error('请上传JPG或PNG格式的图片');
@@ -780,7 +759,6 @@ export default {
       event.target.value = '';
     },
 
-    // 上传编辑的图片
     uploadEditFile(file) {
       this.uploading = true;
       const formData = new FormData();
@@ -804,19 +782,17 @@ export default {
         });
     },
 
-    // 删除直播
     deleteLive(index) {
       const live = this.tableData[index];
       this.$Modal.confirm({
         title: '确认删除',
         content: `确定要删除直播「${live.liveShowName}」吗？此操作不可撤销！`,
         onOk: () => {
-          // 调用删除接口，仅传直播id
           this.$api.deleteLive(live.id)
             .then(res => {
               if (res.code === 200) {
                 this.$Message.success('删除成功');
-                this.getLiveList(); // 刷新列表
+                this.getLiveList();
               } else {
                 this.$Message.error('删除失败：' + res.message);
               }
@@ -829,46 +805,70 @@ export default {
       });
     },
 
-    // 处理复选框变化
     handleEnrollmentCheck(checked) {
-      // 更新Vuex中的状态
-      // this.UPDATE_LIVE_FORM_STATE({
-      //   addEnrollmentForm: checked
-      // });
-      if (checked && this.tableFormat.length === 0) {
-        // 默认添加一个字段
+      this.UPDATE_LIVE_FORM_STATE({
+        addEnrollmentForm: checked
+      });
+      // 取消勾选时清空报名表内容
+      if (!checked) {
+        this.tableFormat = [];
+        this.currentIndex = -1;
+        this.currentField = {};
+      } else if (this.tableFormat.length === 0) {
         this.addField('name');
       }
     },
 
-    // 表单提交处理（创建和编辑共用）
     handleFormSubmit() {
       this.$refs.liveForm.validate(valid => {
         if (valid) {
+          if (!this.currentLiveForm.startTime) {
+            this.$Message.error('请选择开始时间');
+            return;
+          }
           this.modalLoading = true;
+
           if (this.liveFormState.addEnrollmentForm && this.tableFormat.length === 0) {
             this.$Message.warning('报名表请至少添加一个字段');
             return;
           }
-          // 准备提交的数据
+          // 处理时间格式 - 修改禁用状态下默认会改成Date格式须转换
+          const formatStartTime = (time) => {
+            // 如果是 Date 对象，转换为 yyyy-MM-dd HH:mm:ss 格式
+            if (time instanceof Date) {
+              const year = time.getFullYear();
+              const month = String(time.getMonth() + 1).padStart(2, '0');
+              const day = String(time.getDate()).padStart(2, '0');
+              const hours = String(time.getHours()).padStart(2, '0');
+              const minutes = String(time.getMinutes()).padStart(2, '0');
+              const seconds = String(time.getSeconds()).padStart(2, '0');
+              return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+            }
+            // 如果是字符串，直接返回
+            return time;
+          };
+
+          // 处理表单数据
           let processedLiveForm;
           if (this.isEditMode) {
-            // 编辑模式：保留完整的 currentLiveForm
-            processedLiveForm = this.currentLiveForm;
+            processedLiveForm = {
+              ...this.currentLiveForm,
+              startTime: formatStartTime(this.currentLiveForm.startTime)  // 格式化时间
+            };
           } else {
             const { id, ...rest } = this.currentLiveForm;
-            processedLiveForm = rest;
+            processedLiveForm = {
+              ...rest,
+              startTime: formatStartTime(rest.startTime)  // 格式化时间
+            };
           }
           const submitData = {
-            ...processedLiveForm, // 传入处理后的（含/不含 id）基础表单数据
+            ...processedLiveForm,
             liveCover: this.isEditMode ? this.editImgId : this.imgId,
             isEntryFrom: this.liveFormState.addEnrollmentForm ? '1' : '0',
-            tableFormat: this.tableFormat
+            tableFormat: this.liveFormState.addEnrollmentForm ? this.tableFormat : [] // 未勾选时清空
           };
-          console.log('submit', submitData)
-          // 调用API保存数据
           const apiMethod = this.isEditMode ? this.$api.updateLive : this.$api.addLive;
-          console.log('接口', apiMethod)
           apiMethod(submitData)
             .then(res => {
               if (res.code === 200) {
@@ -876,7 +876,9 @@ export default {
                 this.UPDATE_LIVE_FORM_STATE({
                   createModalVisible: false
                 });
-                this.getLiveList(); // 重新加载列表
+                setTimeout(() => {
+                  this.getLiveList();
+                }, 500);
               } else {
                 this.$Message.error(res.message || '操作失败');
               }
@@ -894,15 +896,13 @@ export default {
       });
     },
 
-    // 取消创建/编辑
     handleCreateCancel() {
-      // this.UPDATE_LIVE_FORM_STATE({
-      //   createModalVisible: false
-      // });
+      this.UPDATE_LIVE_FORM_STATE({
+        createModalVisible: false
+      });
       this.isEditMode = false;
       this.activeTab = 'tab1';
       this.$refs.liveForm && this.$refs.liveForm.resetFields();
-      // 清空表单数据
       this.currentLiveForm = {
         id: '',
         liveShowName: '',
@@ -917,41 +917,32 @@ export default {
       this.uploading = false;
     },
 
-    // 显示推流地址详情
     showStreamUrls(row) {
-      // 先检查是否可以显示
       if (!this.canShowStreamUrl(row)) {
         this.$Message.warning('推流地址已失效，不可查看');
         return;
       }
 
-      // 赋值当前直播的推流地址
       this.currentStreamUrls = {
         pushRtmpUrl: row.pushRtmpUrl || ''
       };
-      // 打开模态框
       this.streamUrlModalVisible = true;
     },
 
-    // 显示播流地址详情
     showStream(row) {
       this.currentId = row.id
-      // 先检查是否可以显示
       if (!this.canShowStreamUrl(row)) {
         this.$Message.warning('播流地址已失效，不可查看');
         return;
       }
 
-      // 赋值当前直播的播流地址
       this.currentStreamUrls = {
         pullFlvUrl: row.pullFlvUrl || '',
         pullM3u8Url: row.pullM3u8Url || ''
       };
-      // 打开模态框
       this.streamUrlModal = true;
     },
 
-    // 复制到剪贴板
     copyToClipboard(text) {
       if (!text) {
         this.$Message.warning('暂无地址可复制');
@@ -968,19 +959,14 @@ export default {
       this.$Message.success('地址已复制到剪贴板');
     },
 
-    // 跳转播流地址 通过id传入调接口获取
     toClipboard(id, type) {
-      // 构建播放器URL
       const playerUrl = `${config.playerBaseUrl}/?id=${id}&type=${type}`;
-      // 在新标签页打开
       window.open(playerUrl, '_blank');
     },
 
-    // 打开创建弹框
     openCreateModal() {
       this.isEditMode = false;
       this.activeTab = 'tab1';
-      // 重置表单数据
       this.currentLiveForm = {
         id: '',
         liveShowName: '',
@@ -991,7 +977,6 @@ export default {
       this.tableFormat = [];
       this.currentIndex = -1;
       this.currentField = {};
-      // 更新Vuex状态，显示弹框
       this.UPDATE_LIVE_FORM_STATE({
         createModalVisible: true,
         addEnrollmentForm: false
@@ -1002,7 +987,6 @@ export default {
 </script>
 
 <style scoped>
-/* 复用角色管理页的搜索区域样式 */
 .search-container {
   padding: 15px;
   background: #fff;
@@ -1010,13 +994,6 @@ export default {
   margin: 0 0 15px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
-
-/* 
-::v-deep .ivu-modal {
-  top: 50% !important;
-  transform: translateY(-50%) !important;
-  margin-top: 0 !important;
-} */
 
 .search-row {
   align-items: center;
@@ -1030,7 +1007,6 @@ export default {
   text-align: right;
 }
 
-/* 修复 iView 按钮选择器 */
 .btn-group>>>.ivu-btn {
   margin-left: 8px;
 }
@@ -1083,7 +1059,6 @@ export default {
   margin-bottom: 4px;
 }
 
-/* 预览区域样式 */
 .preview-area {
   display: inline-block;
 }
@@ -1109,10 +1084,6 @@ export default {
   height: 100%;
   object-fit: cover;
   display: block;
-}
-
-.preview-wrapper:hover .delete-icon {
-  opacity: 1;
 }
 
 .delete-icon {
@@ -1177,7 +1148,6 @@ export default {
   border-left: 3px solid #409eff;
 }
 
-/* 推流地址模态框样式 */
 .stream-url-container {
   padding: 10px;
 }
@@ -1222,23 +1192,12 @@ export default {
   color: #66b1ff;
 }
 
-/* 图片预览模态框样式 */
 .image-preview-modal>>>.ivu-modal-body {
   padding: 0;
 }
 
-/* 报名表样式 */
 .enrollment-form {
   padding: 10px 0;
-}
-
-.form-header {
-  margin-bottom: 15px;
-  border-bottom: 1px solid #eee;
-  padding-bottom: 10px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
 }
 
 .form-layout {
@@ -1302,7 +1261,6 @@ export default {
   margin-bottom: 10px;
 }
 
-/* 必填星号样式 */
 .required-star {
   color: #f5222d;
   font-weight: bold;
@@ -1325,7 +1283,6 @@ export default {
   padding-left: 24px;
 }
 
-/* 性别预览单选框样式（一行显示） */
 .gender-radio-group {
   display: flex;
   gap: 20px;
@@ -1349,7 +1306,6 @@ export default {
   margin-bottom: 20px;
 }
 
-/* 性别选项配置：一行显示两个input */
 .gender-option-inputs {
   display: flex;
   gap: 20px;
@@ -1362,7 +1318,6 @@ export default {
   gap: 5px;
 }
 
-/* 必填开关样式：开关在前 + 文字对齐 */
 .required-switch-wrap {
   display: flex;
   align-items: center;
@@ -1388,7 +1343,6 @@ export default {
   margin-top: 10px;
 }
 
-/* 滚动条优化，避免遮挡 */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
