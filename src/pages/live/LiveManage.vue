@@ -753,9 +753,9 @@ export default {
       this.liveFormState.addEnrollmentForm = live.hasEnrollment || false;
       this.tableFormat = live.enrollmentForm && live.enrollmentForm.tableFormat || [];
       // 打开模态框
-      this.UPDATE_LIVE_FORM_STATE({
-        createModalVisible: true
-      });
+      // this.UPDATE_LIVE_FORM_STATE({
+      //   createModalVisible: true
+      // });
     },
 
     // 编辑时处理文件选择
@@ -832,9 +832,9 @@ export default {
     // 处理复选框变化
     handleEnrollmentCheck(checked) {
       // 更新Vuex中的状态
-      this.UPDATE_LIVE_FORM_STATE({
-        addEnrollmentForm: checked
-      });
+      // this.UPDATE_LIVE_FORM_STATE({
+      //   addEnrollmentForm: checked
+      // });
       if (checked && this.tableFormat.length === 0) {
         // 默认添加一个字段
         this.addField('name');
@@ -851,36 +851,43 @@ export default {
             return;
           }
           // 准备提交的数据
-          const { id, ...currentLiveFormWithoutId } = this.currentLiveForm;
+          let processedLiveForm;
+          if (this.isEditMode) {
+            // 编辑模式：保留完整的 currentLiveForm
+            processedLiveForm = this.currentLiveForm;
+          } else {
+            const { id, ...rest } = this.currentLiveForm;
+            processedLiveForm = rest;
+          }
           const submitData = {
-            ...currentLiveFormWithoutId,
+            ...processedLiveForm, // 传入处理后的（含/不含 id）基础表单数据
             liveCover: this.isEditMode ? this.editImgId : this.imgId,
-            hasEnrollment: this.liveFormState.addEnrollmentForm,
+            isEntryFrom: this.liveFormState.addEnrollmentForm ? '1' : '0',
             tableFormat: this.tableFormat
           };
           console.log('submit', submitData)
           // 调用API保存数据
           const apiMethod = this.isEditMode ? this.$api.updateLive : this.$api.addLive;
           console.log('接口', apiMethod)
-          // apiMethod(submitData)
-          //   .then(res => {
-          //     if (res.code === 200) {
-          //       this.$Message.success(this.isEditMode ? '修改成功' : '创建成功');
-          //       this.UPDATE_LIVE_FORM_STATE({
-          //         createModalVisible: false
-          //       });
-          //       this.getLiveList(); // 重新加载列表
-          //     } else {
-          //       this.$Message.error(res.message || '操作失败');
-          //     }
-          //   })
-          //   .catch(err => {
-          //     console.error('操作失败', err);
-          //     this.$Message.error('网络错误，请重试');
-          //   })
-          //   .finally(() => {
-          //     this.modalLoading = false;
-          //   });
+          apiMethod(submitData)
+            .then(res => {
+              if (res.code === 200) {
+                this.$Message.success(this.isEditMode ? '修改成功' : '创建成功');
+                this.UPDATE_LIVE_FORM_STATE({
+                  createModalVisible: false
+                });
+                this.getLiveList(); // 重新加载列表
+              } else {
+                this.$Message.error(res.message || '操作失败');
+              }
+            })
+            .catch(err => {
+              console.error('操作失败', err);
+              this.$Message.error('网络错误，请重试');
+            })
+            .finally(() => {
+              this.modalLoading = false;
+            });
         } else {
           this.$Message.error('请检查填写项');
         }
@@ -889,9 +896,9 @@ export default {
 
     // 取消创建/编辑
     handleCreateCancel() {
-      this.UPDATE_LIVE_FORM_STATE({
-        createModalVisible: false
-      });
+      // this.UPDATE_LIVE_FORM_STATE({
+      //   createModalVisible: false
+      // });
       this.isEditMode = false;
       this.activeTab = 'tab1';
       this.$refs.liveForm && this.$refs.liveForm.resetFields();
