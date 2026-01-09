@@ -55,6 +55,8 @@ const api = {
   getImage: (params) => request.get(`${base}/sysFile/image/${params}`),
   // sysFile/delete/{id} 文件删除
   delete: (params) => request.delete(`${base}/sysFile/delete/${params}`),
+  // userRegistrationData/list 用户报名信息查询
+  getRegistrationList: (params) => request.get(`${base}/userRegistrationData/list`, { params }),
 };
 
 export default api;

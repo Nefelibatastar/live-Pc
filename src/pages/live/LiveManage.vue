@@ -240,6 +240,36 @@
         <i-button type="primary" @click="previewModalVisible = false">关闭</i-button>
       </div>
     </Modal>
+    <!-- 报名表查看弹窗 -->
+    <Modal v-model="registrationModalVisible" title="直播报名表" :loading="registrationLoading" width="80%">
+      <!-- 查询部分 -->
+      <div class="search-container" style="margin-bottom: 10px;">
+        <Row :gutter="16" class="search-row">
+          <Col :span="8">
+          <i-input v-model="registrationQuery.userName" placeholder="请输入内容搜索" clearable
+            @on-clear="handleRegistrationSearch" @on-enter="handleRegistrationSearch" class="search-input">
+            <Icon type="ios-search" slot="prefix" />
+          </i-input>
+          </Col>
+          <Col :span="16" class="btn-group">
+          <i-button type="default" @click="resetRegistrationQuery">重置</i-button>
+          <i-button type="primary" @click="handleRegistrationSearch">搜索</i-button>
+          <i-button type="success" @click="exportRegistrationExcel" :loading="exportLoading">
+            <Icon type="ios-download-outline" />导出Excel
+          </i-button>
+          </Col>
+        </Row>
+      </div>
+
+      <!-- 报名表列表 - 使用动态生成的列 -->
+      <Table :data="registrationTableData" :columns="dynamicRegistrationColumns" stripe border></Table>
+
+      <!-- 报名表分页 -->
+      <div style="margin: 10px; overflow: hidden; text-align: right;">
+        <Page :total="registrationTotal" :current="registrationPageNum" :page-size="registrationPageSize"
+          @on-change="handleRegistrationPageChange" show-total></Page>
+      </div>
+    </Modal>
   </div>
 </template>
 
@@ -435,9 +465,40 @@ export default {
           }
         },
         {
+          title: '用户报名表',
+          key: 'registration',
+          align: 'center',
+          width: 100,
+          render: (h, params) => {
+            const row = params.row;
+            // 判断是否有报名表：isEntryFrom === '1' 且有 entryFromData
+            const canViewRegistration = row.isEntryFrom === '1' && row.entryFromData && row.entryFromData.length > 0;
+
+            return h('i-button', {
+              props: {
+                type: canViewRegistration ? 'primary' : 'default',
+                size: 'small',
+                disabled: !canViewRegistration
+              },
+              style: {
+                marginRight: '0'
+              },
+              on: {
+                click: () => {
+                  if (canViewRegistration) {
+                    this.openRegistrationModal(row); // 传递整个行对象
+                  } else {
+                    this.$Message.warning('该直播暂无报名表，不可查看');
+                  }
+                }
+              }
+            }, canViewRegistration ? '查看' : '暂无');
+          }
+        },
+        {
           title: '操作',
           key: 'action',
-          width: 200,
+          width: 170,
           align: 'center',
           render: (h, params) => {
             return h('div', [
@@ -467,7 +528,24 @@ export default {
       genderOptions: {
         male: '男',
         female: '女'
-      }
+      },
+      // 报名表相关
+      registrationModalVisible: false,
+      registrationLoading: false,
+      registrationTableData: [],
+      registrationTotal: 0,
+      registrationPageNum: 1,
+      registrationPageSize: 10,
+      currentLiveId: '', // 当前选中的直播ID
+      currentLiveEntryData: null, // 存储当前直播的报名表结构
+      // 动态生成的报名表列
+      dynamicRegistrationColumns: [],
+      // 报名表查询条件
+      registrationQuery: {
+        userName: ''
+      },
+      // 导出状态
+      exportLoading: false,
     };
   },
   computed: {
@@ -981,6 +1059,354 @@ export default {
         createModalVisible: true,
         addEnrollmentForm: false
       });
+    },
+    openRegistrationModal(row) {
+      if (!row) {
+        this.$Message.error('暂无报名信息');
+        return;
+      }
+
+      // 保存当前直播的报名表结构
+      this.currentLiveEntryData = row.entryFromData || [];
+      this.currentLiveId = row.id;
+      this.currentLiveName = row.liveShowName || '直播报名表';
+      this.registrationPageNum = 1;
+      this.registrationModalVisible = true;
+      this.registrationQuery.userName = '';
+
+      // 根据entryFromData动态生成表格列
+      this.generateDynamicColumns();
+
+      // 加载报名表数据
+      this.getRegistrationList();
+    },
+    // 报名表搜索
+    handleRegistrationSearch() {
+      this.registrationPageNum = 1;
+      this.getRegistrationList();
+    },
+    // 动态生成报名表列
+    generateDynamicColumns() {
+      if (!this.currentLiveEntryData || this.currentLiveEntryData.length === 0) {
+        console.log('没有报名表结构，使用默认列');
+        this.dynamicRegistrationColumns = [
+          {
+            title: '报名内容',
+            key: 'formContent',
+            align: 'center',
+            render: (h, params) => {
+              const content = params.row;
+              let html = '';
+              Object.keys(content).forEach(key => {
+                if (key !== 'id' && key !== 'createTime') {
+                  html += `${key}：${content[key]}<br/>`;
+                }
+              });
+              return h('div', {
+                domProps: {
+                  innerHTML: html
+                }
+              });
+            }
+          },
+          // {
+          //   title: '报名时间',
+          //   key: 'createTime',
+          //   align: 'center',
+          //   width: 180,
+          //   render: (h, params) => {
+          //     return params.row.createTime
+          //       ? params.row.createTime.replace('T', ' ')
+          //       : '-';
+          //   }
+          // }
+        ];
+        return;
+      }
+
+      // 根据entryFromData生成列配置
+      const columns = this.currentLiveEntryData.map(field => {
+        return {
+          title: field.name + (field.required ? ' *' : ''),
+          key: field.name,
+          align: 'center',
+          minWidth: 120,
+          render: (h, params) => {
+            const value = params.row[field.name] || '-';
+            return h('span', value);
+          }
+        };
+      });
+
+      // 添加报名时间列
+      // columns.push({
+      //   title: '报名时间',
+      //   key: 'createTime',
+      //   align: 'center',
+      //   width: 180,
+      //   render: (h, params) => {
+      //     return params.row.createTime
+      //       ? params.row.createTime.replace('T', ' ')
+      //       : '-';
+      //   }
+      // });
+
+      this.dynamicRegistrationColumns = columns;
+    },
+    // 获取报名表列表
+    getRegistrationList() {
+      this.registrationLoading = true;
+      const params = {
+        liveId: this.currentLiveId,
+        userName: this.registrationQuery.userName.trim() || undefined, // 搜索
+        pageNum: this.registrationPageNum,
+        pageSize: this.registrationPageSize
+      };
+      this.$api.getRegistrationList(params)
+        .then(res => {
+          if (res.code === 200) {
+            // 处理返回的数据，确保与表头对应
+            this.registrationTableData = this.processRegistrationData(res.data.records || []);
+            this.registrationTotal = res.data.total || 0;
+          } else {
+            this.$Message.error('获取报名表失败：' + res.message);
+          }
+        })
+        .catch(err => {
+          console.error('获取报名表接口报错：', err);
+          this.$Message.error('接口请求失败');
+        })
+        .finally(() => {
+          this.registrationLoading = false;
+        });
+    },
+    // 导出报名表为Excel
+    exportRegistrationExcel() {
+      if (!this.currentLiveEntryData || this.currentLiveEntryData.length === 0) {
+        this.$Message.warning('暂无报名表数据可导出');
+        return;
+      }
+
+      if (this.registrationTableData.length === 0) {
+        this.$Message.warning('没有可导出的数据');
+        return;
+      }
+
+      this.exportLoading = true;
+
+      import('xlsx').then(XLSX => {
+        // 获取所有数据 - 包含搜索条件
+        const params = {
+          liveId: this.currentLiveId,
+          userName: this.registrationQuery.userName.trim() || undefined, // 包含搜索条件
+          pageNum: 1,
+          pageSize: 10000
+        };
+
+        return this.$api.getRegistrationList(params)
+          .then(res => {
+            if (res.code === 200) {
+              const allData = res.data.records || [];
+              if (allData.length === 0) {
+                this.$Message.warning('没有可导出的数据');
+                return;
+              }
+
+              const processedData = this.processRegistrationData(allData);
+              return this.generateExcelWithXLSX(XLSX, processedData);
+            } else {
+              this.$Message.error('获取导出数据失败：' + res.message);
+            }
+          });
+      })
+        .catch(err => {
+          console.error('加载Excel库失败:', err);
+          this.$Message.error('导出功能加载失败');
+        })
+        .finally(() => {
+          this.exportLoading = false;
+        });
+    },
+    generateExcelWithXLSX(XLSX, data) {
+      try {
+        // 准备表头
+        const headers = [];
+        const headerKeys = [];
+
+        // 添加动态字段
+        this.currentLiveEntryData.forEach(field => {
+          headers.push(field.name + (field.required ? '*' : ''));
+          headerKeys.push(field.name);
+        });
+
+        // 添加报名时间
+        // headers.push('报名时间');
+        // headerKeys.push('createTime');
+
+        // 准备数据行 - 修复replace错误
+        const dataRows = data.map(item => {
+          const row = {};
+          headerKeys.forEach(key => {
+            if (key === 'createTime') {
+              // 安全地处理createTime，避免replace错误
+              const value = item[key];
+              row[key] = value && typeof value === 'string' ? value.replace('T', ' ') : '';
+            } else {
+              // 其他字段直接赋值
+              row[key] = item[key] || '';
+            }
+          });
+          return row;
+        });
+
+        console.log('准备导出的数据行:', dataRows); // 调试用
+
+        // 创建工作表
+        const worksheet = XLSX.utils.json_to_sheet(dataRows, {
+          header: headerKeys
+        });
+
+        // 设置表头
+        const range = XLSX.utils.decode_range(worksheet['!ref']);
+        for (let C = range.s.c; C <= range.e.c; ++C) {
+          const address = XLSX.utils.encode_cell({ r: 0, c: C });
+          if (!worksheet[address]) {
+            worksheet[address] = {};
+          }
+          worksheet[address].v = headers[C];
+          worksheet[address].t = 's';
+        }
+
+        // 调整列宽
+        const colWidths = headers.map(header => ({
+          wch: Math.max(header.length, 10)
+        }));
+        worksheet['!cols'] = colWidths;
+
+        // 创建工作簿
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, '报名表');
+
+        // 生成文件名 - 确保有直播名称
+        const safeFileName = (this.currentLiveName || '直播').replace(/[\/\\:*?"<>|]/g, '_');
+        const fileName = `${safeFileName}_报名表_${this.formatDate(new Date())}.xlsx`;
+
+        console.log('导出文件名:', fileName); // 调试用
+
+        // 导出文件
+        XLSX.writeFile(workbook, fileName);
+        this.$Message.success('导出成功');
+
+      } catch (error) {
+        console.error('导出Excel失败:', error);
+        console.error('错误堆栈:', error.stack); // 添加堆栈信息
+        this.$Message.error('导出失败：' + error.message);
+      }
+    },
+    // 生成Excel文件
+    generateExcel(data) {
+      try {
+        // 准备表头
+        const headers = [];
+        const headerKeys = [];
+
+        // 添加动态字段
+        this.currentLiveEntryData.forEach(field => {
+          headers.push(field.name + (field.required ? '*' : ''));
+          headerKeys.push(field.name);
+        });
+
+        // 添加报名时间
+        // headers.push('报名时间');
+        // headerKeys.push('createTime');
+
+        // 准备数据行
+        const dataRows = data.map(item => {
+          const row = {};
+          headerKeys.forEach(key => {
+            if (key === 'createTime') {
+              row[key] = item[key] ? item[key].replace('T', ' ') : '';
+            } else {
+              row[key] = item[key] || '';
+            }
+          });
+          return row;
+        });
+
+        // 创建工作簿
+        const worksheet = XLSX.utils.json_to_sheet(dataRows, {
+          header: headerKeys
+        });
+
+        // 设置表头
+        const range = XLSX.utils.decode_range(worksheet['!ref']);
+        for (let C = range.s.c; C <= range.e.c; ++C) {
+          const address = XLSX.utils.encode_cell({ r: 0, c: C });
+          worksheet[address] = { v: headers[C], t: 's', s: { font: { bold: true } } };
+        }
+
+        // 调整列宽
+        const colWidths = headers.map(header => ({
+          wch: Math.max(header.length, 10)
+        }));
+        worksheet['!cols'] = colWidths;
+
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, '报名表');
+
+        // 生成文件名
+        const fileName = `${this.currentLiveName}_报名表_${this.formatDate(new Date())}.xlsx`;
+
+        // 导出文件
+        XLSX.writeFile(workbook, fileName);
+        this.$Message.success('导出成功');
+
+      } catch (error) {
+        console.error('导出Excel失败:', error);
+        this.$Message.error('导出失败，请重试');
+      }
+    },
+
+    // 日期格式化工具函数
+    formatDate(date) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      const seconds = String(date.getSeconds()).padStart(2, '0');
+      return `${year}${month}${day}_${hours}${minutes}${seconds}`;
+    },
+
+    // 处理报名表数据，确保与表头对应
+    processRegistrationData(data) {
+      if (!this.currentLiveEntryData || this.currentLiveEntryData.length === 0) {
+        return data;
+      }
+
+      // 如果有表头定义，确保每条数据都包含所有表头字段
+      return data.map(item => {
+        const processedItem = { ...item };
+        this.currentLiveEntryData.forEach(field => {
+          // 如果数据中没有该字段，设为空值
+          if (processedItem[field.name] === undefined) {
+            processedItem[field.name] = '';
+          }
+        });
+        return processedItem;
+      });
+    },
+    // 报名表分页切换
+    handleRegistrationPageChange(page) {
+      this.registrationPageNum = page;
+      this.getRegistrationList();
+    },
+
+    // 重置报名表查询
+    resetRegistrationQuery() {
+      this.registrationQuery.userName = '';
+      this.registrationPageNum = 1;
+      this.getRegistrationList();
     }
   },
 };
