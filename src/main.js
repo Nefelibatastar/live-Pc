@@ -5,7 +5,7 @@ import VueRouter from 'vue-router'
 import store from './vuex/store'
 import Vuex from 'vuex'
 import routes from './routes'
-import Mock from './mock'
+// import Mock from './mock'
 import iview from 'iview'
 import 'iview/dist/styles/iview.css'
 import VueClipboard from 'vue-clipboard2'
@@ -18,7 +18,7 @@ Vue.prototype.$api = api;
 // 使用中文语言包
 Vue.use(ElementUI, { locale });
 
-Mock.bootstrap();
+// Mock.bootstrap();
 
 Vue.use(VueClipboard)
 Vue.use(VueRouter)

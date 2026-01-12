@@ -298,7 +298,7 @@ export default {
         .then((res) => {
           if (res.code === 200) {
             let roleData = res.data.records
-            roleData.push({ "id": '0', "roleName": '普通用户' })
+           // roleData.push({ "id": '0', "roleName": '普通用户' })
             this.roleList = roleData
           } else {
             this.$Message.error('获取角色列表失败：' + res.message);
