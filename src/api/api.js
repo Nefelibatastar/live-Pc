@@ -57,6 +57,14 @@ const api = {
   delete: (params) => request.delete(`${base}/sysFile/delete/${params}`),
   // userRegistrationData/list 用户报名信息查询
   getRegistrationList: (params) => request.get(`${base}/userRegistrationData/list`, { params }),
+
+  //评论相关
+  // /liveComment/listWithPaging 分页查询评论列表
+  listWithPaging: (params) => request.get(`${base}/liveComment/listWithPaging`, { params }),
+  // /liveComment/delete 删除评论
+  deleteComment: (params) => request.delete(`${base}/liveComment/delete`, params),
+  // /liveStreamStats/getDetailedStats获取直播详细统计数据
+  getDetailedStats: (params) => request.get(`${base}/liveStreamStats/getDetailedStats`, { params }),
 };
 
 export default api;
