@@ -1,13 +1,13 @@
 <!-- 报名表查看弹框 -->
- <!-- LiveManage/components/RegistrationModal.vue -->
+<!-- LiveManage/components/RegistrationModal.vue -->
 <template>
   <Modal v-model="modalVisible" title="直播报名表" :loading="loading" width="80%">
     <!-- 查询部分 -->
     <div class="search-container" style="margin-bottom: 10px;">
       <Row :gutter="16" class="search-row">
         <Col :span="8">
-        <i-input v-model="query.userName" placeholder="请输入内容搜索" clearable
-          @on-clear="handleSearch" @on-enter="handleSearch" class="search-input">
+        <i-input v-model="query.userName" placeholder="请输入内容搜索" clearable @on-clear="handleSearch"
+          @on-enter="handleSearch" class="search-input">
           <Icon type="ios-search" slot="prefix" />
         </i-input>
         </Col>
@@ -26,8 +26,7 @@
 
     <!-- 分页 -->
     <div style="margin: 10px; overflow: hidden; text-align: right;">
-      <Page :total="total" :current="pageNum" :page-size="pageSize"
-        @on-change="handlePageChange" show-total></Page>
+      <Page :total="total" :current="pageNum" :page-size="pageSize" @on-change="handlePageChange" show-total></Page>
     </div>
   </Modal>
 </template>
@@ -196,7 +195,42 @@ export default {
 
       this.exportLoading = true;
 
-      import('xlsx').then(XLSX => {
+      // import('xlsx').then(XLSX => {
+      //   const params = {
+      //     liveId: this.liveId,
+      //     userName: this.query.userName.trim() || undefined,
+      //     pageNum: 1,
+      //     pageSize: 10000
+      //   };
+
+      //   return this.$api.getRegistrationList(params)
+      //     .then(res => {
+      //       if (res.code === 200) {
+      //         const allData = res.data.records || [];
+      //         if (allData.length === 0) {
+      //           this.$Message.warning('没有可导出的数据');
+      //           return;
+      //         }
+
+      //         const processedData = this.processRegistrationData(allData);
+      //         return this.generateExcelWithXLSX(XLSX, processedData);
+      //       } else {
+      //         this.$Message.error('获取导出数据失败：' + res.message);
+      //       }
+      //     });
+      // })
+      //   .catch(err => {
+      //     console.error('加载Excel库失败:', err);
+      //     this.$Message.error('导出功能加载失败');
+      //   })
+      //   .finally(() => {
+      //     this.exportLoading = false;
+      //   });
+      // 使用 require 而不是 import() 来避免 ES6 模块问题
+      // 同时使用 xlsx 的 dist 目录下的文件
+      require.ensure([], () => {
+        const XLSX = require('xlsx/dist/xlsx.core.min');
+
         const params = {
           liveId: this.liveId,
           userName: this.query.userName.trim() || undefined,
@@ -204,7 +238,7 @@ export default {
           pageSize: 10000
         };
 
-        return this.$api.getRegistrationList(params)
+        this.$api.getRegistrationList(params)
           .then(res => {
             if (res.code === 200) {
               const allData = res.data.records || [];
@@ -214,19 +248,19 @@ export default {
               }
 
               const processedData = this.processRegistrationData(allData);
-              return this.generateExcelWithXLSX(XLSX, processedData);
+              this.generateExcelWithXLSX(XLSX, processedData);
             } else {
               this.$Message.error('获取导出数据失败：' + res.message);
             }
+          })
+          .catch(err => {
+            console.error('获取导出数据失败:', err);
+            this.$Message.error('获取数据失败');
+          })
+          .finally(() => {
+            this.exportLoading = false;
           });
-      })
-        .catch(err => {
-          console.error('加载Excel库失败:', err);
-          this.$Message.error('导出功能加载失败');
-        })
-        .finally(() => {
-          this.exportLoading = false;
-        });
+      });
     },
 
     generateExcelWithXLSX(XLSX, data) {
@@ -316,7 +350,7 @@ export default {
   text-align: right;
 }
 
-.btn-group >>> .ivu-btn {
+.btn-group>>>.ivu-btn {
   margin-left: 8px;
 }
 </style>
