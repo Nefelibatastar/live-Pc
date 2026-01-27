@@ -29,57 +29,27 @@
     </div>
 
     <!-- 导入所有弹框组件 -->
-    <CreateEditLiveModal
-      :visible="createEditModalVisible"
-      :isEditMode="isEditMode"
-      :liveData="selectedLive"
-      @update:visible="val => createEditModalVisible = val"
-      @submit="handleLiveSubmit"
-      @cancel="handleCreateCancel"
-      @preview-image="previewCoverImage"
-    />
-    
-    <StreamUrlModal
-      :visible="streamUrlModalVisible"
-      type="push"
-      :streamUrls="currentStreamUrls"
-      @update:visible="val => streamUrlModalVisible = val"
-    />
-    
-    <StreamUrlModal
-      :visible="streamUrlModal"
-      type="pull"
-      :streamUrls="currentStreamUrls"
-      :liveId="currentId"
-      @update:visible="val => streamUrlModal = val"
-    />
-    
-    <ImagePreviewModal
-      :visible="previewModalVisible"
-      :imageUrl="previewImageUrl"
-      @update:visible="val => previewModalVisible = val"
-    />
-    
-    <RegistrationModal
-      :visible="registrationModalVisible"
-      :liveId="currentLiveId"
-      :entryFromData="currentLiveEntryData"
-      :liveName="currentLiveName"
-      @update:visible="val => registrationModalVisible = val"
-    />
-    
-    <CommentModal
-      :visible="commentModalVisible"
-      :liveStreamId="currentCommentLiveId"
-      :liveName="currentCommentLiveName"
-      @update:visible="val => commentModalVisible = val"
-    />
-    
-    <LiveStats 
-      :visible="statsModalVisible" 
-      :liveStreamId="currentLiveId"
-      @update:visible="val => statsModalVisible = val"
-    />
+    <CreateEditLiveModal :visible="createEditModalVisible" :isEditMode="isEditMode" :liveData="selectedLive"
+      @update:visible="val => createEditModalVisible = val" @submit="handleLiveSubmit" @cancel="handleCreateCancel"
+      @preview-image="previewCoverImage" />
+
+    <StreamUrlModal :visible="streamUrlModalVisible" type="push" :streamUrls="currentStreamUrls"
+      @update:visible="val => streamUrlModalVisible = val" />
+
+    <StreamUrlModal :visible="streamUrlModal" type="pull" :streamUrls="currentStreamUrls" :liveId="currentId"
+      @update:visible="val => streamUrlModal = val" />
+
+    <ImagePreviewModal :visible="previewModalVisible" :imageUrl="previewImageUrl"
+      @update:visible="val => previewModalVisible = val" />
+
+    <RegistrationModal :visible="registrationModalVisible" :liveId="currentLiveId" :entryFromData="currentLiveEntryData"
+      :liveName="currentLiveName" @update:visible="val => registrationModalVisible = val" />
+
+    <CommentModal :visible="commentModalVisible" :liveStreamId="currentCommentLiveId" :liveName="currentCommentLiveName"
+      @update:visible="val => commentModalVisible = val" />
+
+    <LiveStats :visible="statsModalVisible" :liveStreamId="currentLiveId"
+      @update:visible="val => statsModalVisible = val" />
   </div>
 </template>
 
@@ -116,7 +86,7 @@ export default {
       queryForm: {
         liveShowName: ''
       },
-      
+
       // 弹框显示状态
       createEditModalVisible: false,
       streamUrlModalVisible: false,
@@ -125,7 +95,7 @@ export default {
       registrationModalVisible: false,
       commentModalVisible: false,
       statsModalVisible: false,
-      
+
       // 弹框数据
       isEditMode: false,
       selectedLive: {},
@@ -141,7 +111,7 @@ export default {
       currentLiveName: '',
       currentCommentLiveId: '',
       currentCommentLiveName: '',
-      
+
       // 表格列配置
       tableColumns: [
         {
@@ -590,7 +560,7 @@ export default {
   text-align: right;
 }
 
-.btn-group >>> .ivu-btn {
+.btn-group>>>.ivu-btn {
   margin-left: 8px;
 }
 </style>

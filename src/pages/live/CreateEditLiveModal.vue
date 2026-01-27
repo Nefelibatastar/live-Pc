@@ -1,5 +1,5 @@
 <!-- 创建/编辑直播弹框 -->
- <!-- LiveManage/components/CreateEditLiveModal.vue -->
+<!-- LiveManage/components/CreateEditLiveModal.vue -->
 <template>
   <Modal v-model="modalVisible" :title="isEditMode ? '修改直播' : '创建直播'" @on-ok="handleFormSubmit"
     @on-cancel="handleCreateCancel" :loading="modalLoading" width="1000">
@@ -8,7 +8,7 @@
       <TabPane name="tab1" label="直播信息"></TabPane>
       <TabPane name="tab2" label="报名表设置" :disabled="!addEnrollmentForm"></TabPane>
     </Tabs>
-    
+
     <!-- 标签页内容 -->
     <div v-show="activeTab === 'tab1'">
       <Form ref="liveForm" :model="currentLiveForm" :rules="liveRules" :label-width="100">
@@ -68,7 +68,7 @@
         </Form-item>
       </Form>
     </div>
-    
+
     <!-- 报名表设置标签页内容 -->
     <div v-show="activeTab === 'tab2'" class="enrollment-form">
       <!-- 左中右三栏布局 -->
@@ -242,6 +242,10 @@ export default {
       }
     };
   },
+  created() {
+    // 组件创建时初始化
+    this.initData();
+  },
   computed: {
     ...mapState('live', ['liveFormState']),
     addEnrollmentForm: {
@@ -256,16 +260,34 @@ export default {
   watch: {
     visible(val) {
       this.modalVisible = val;
+      // 当弹框显示时，根据模式初始化数据
+      if (val) {
+        this.$nextTick(() => {
+          if (this.isEditMode && this.liveData && Object.keys(this.liveData).length > 0) {
+            this.setEditData(this.liveData);
+          } else if (!this.isEditMode) {
+            this.resetForm();
+          }
+        });
+      }
+    },
+    liveData: {
+      handler(val) {
+        // 只有当弹框显示且是编辑模式时才设置数据
+        if (this.modalVisible && this.isEditMode && val && Object.keys(val).length > 0) {
+          this.setEditData(val);
+        }
+      },
+      deep: true,
+      immediate: true
     },
     modalVisible(val) {
       this.$emit('update:visible', val);
       if (!val) {
-        this.resetForm();
-      }
-    },
-    isEditMode(val) {
-      if (val && this.liveData) {
-        this.setEditData(this.liveData);
+        // 延迟重置，避免影响下一次打开
+        setTimeout(() => {
+          this.resetForm();
+        }, 300);
       }
     },
     currentIndex(newVal) {
@@ -288,7 +310,56 @@ export default {
   methods: {
     ...mapMutations('live', ['UPDATE_LIVE_FORM_STATE', 'RESTORE_LIVE_FORM_STATE']),
     ...mapActions('live', ['saveLiveFormState']),
+    initData() {
+      // 如果是编辑模式且已有数据，直接设置
+      if (this.isEditMode && this.liveData && Object.keys(this.liveData).length > 0) {
+        this.setEditData(this.liveData);
+      }
+    },
 
+    setEditData(live) {
+      console.log('设置编辑数据:', live); // 添加日志调试
+
+      if (!live || Object.keys(live).length === 0) {
+        console.warn('编辑数据为空');
+        return;
+      }
+
+      // 重置当前表单状态
+      this.currentLiveForm = {
+        id: live.id || '',
+        liveShowName: live.liveShowName || '',
+        startTime: live.startTime || '',
+        liveCover: live.liveCover ? `/api/sysFile/image/${live.liveCover}` : ''
+      };
+
+      this.editImgId = live.liveCover || '';
+
+      // 重置 Vuex 状态
+      this.UPDATE_LIVE_FORM_STATE({
+        addEnrollmentForm: live.isEntryFrom === '1'
+      });
+
+      // 设置报名表数据
+      try {
+        if (live.entryFromData) {
+          // 确保是数组且深拷贝
+          this.tableFormat = Array.isArray(live.entryFromData)
+            ? JSON.parse(JSON.stringify(live.entryFromData))
+            : [];
+        } else {
+          this.tableFormat = [];
+        }
+      } catch (error) {
+        console.error('解析报名表数据失败:', error);
+        this.tableFormat = [];
+      }
+
+      this.currentIndex = -1;
+      this.currentField = {};
+
+      console.log('设置后的数据:', this.currentLiveForm, this.tableFormat);
+    },
     setEditData(live) {
       this.activeTab = 'tab1';
       this.currentLiveForm = {
@@ -303,6 +374,9 @@ export default {
     },
 
     resetForm() {
+      console.log('重置表单');
+
+      // 只重置必要的数据，保留 Vuex 状态
       this.activeTab = 'tab1';
       this.currentLiveForm = {
         id: '',
@@ -316,9 +390,8 @@ export default {
       this.currentIndex = -1;
       this.currentField = {};
       this.uploading = false;
-      this.UPDATE_LIVE_FORM_STATE({
-        addEnrollmentForm: false
-      });
+
+      // 重置表单验证
       if (this.$refs.liveForm) {
         this.$refs.liveForm.resetFields();
       }
@@ -492,7 +565,18 @@ export default {
             this.$Message.error('请选择开始时间');
             return;
           }
-          
+
+          // 添加时间验证 - 不能选择当前时间之前的时间
+          if (!this.isEditMode) {
+            const selectedTime = new Date(this.currentLiveForm.startTime).getTime();
+            const currentTime = new Date().getTime();
+
+            if (selectedTime < currentTime) {
+              this.$Message.error('开始时间不能早于当前时间');
+              return;
+            }
+          }
+
           if (this.addEnrollmentForm && this.tableFormat.length === 0) {
             this.$Message.warning('报名表请至少添加一个字段');
             return;

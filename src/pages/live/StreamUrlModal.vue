@@ -7,11 +7,10 @@
         <label class="url-label">RTMP 推流地址：</label>
         <div class="url-content">
           <span>{{ streamUrls.pushRtmpUrl || '暂无' }}</span>
-          <i-button type="text" @click="copyToClipboard(streamUrls.pushRtmpUrl)"
-            icon="ivu-icon-ios-copy">复制</i-button>
+          <i-button type="text" @click="copyToClipboard(streamUrls.pushRtmpUrl)" icon="ivu-icon-ios-copy">复制</i-button>
         </div>
       </div>
-      
+
       <!-- 播流地址 -->
       <template v-if="type === 'pull'">
         <div class="url-item">
@@ -34,6 +33,7 @@
 </template>
 
 <script>
+import { config } from '../../config'
 export default {
   name: 'StreamUrlModal',
   props: {
@@ -63,6 +63,10 @@ export default {
   computed: {
     title() {
       return this.type === 'push' ? '推流地址详情' : '播流地址详情';
+    },
+    playerBaseUrl() {
+      // 可以直接返回 config.playerBaseUrl，或者在这里做额外处理
+      return config.playerBaseUrl;
     }
   },
   watch: {
@@ -95,7 +99,7 @@ export default {
         this.$Message.warning('直播ID不存在');
         return;
       }
-      
+
       const playerUrl = `${this.playerBaseUrl}/?id=${this.liveId}&type=${streamType}`;
       window.open(playerUrl, '_blank');
     }
