@@ -147,11 +147,12 @@ export default {
                         this.menuList = res.data;
                     } else {
                         this.$Message.error('获取菜单失败：' + res.message);
+                        this.$router.push('/login');
                     }
                 })
                 .catch((err) => {
                     console.error('获取菜单接口报错：', err);
-                    this.$Message.error('接口请求失败');
+                    // this.$Message.error('接口请求失败');
                 });
         },
         toggleClick() {

@@ -4,17 +4,17 @@
     <div class="search-container">
       <Row :gutter="16" class="search-row">
         <Col :span="6">
-        <i-input v-model="queryForm.userName" placeholder="请输入用户姓名" class="search-input"></i-input>
+          <i-input v-model="queryForm.userName" placeholder="请输入用户姓名" class="search-input"></i-input>
         </Col>
         <Col :span="6">
-        <Select v-model="queryForm.roleId" placeholder="请选择角色" clearable>
-          <Option v-for="role in roleList" :key="role.id" :value="role.id">{{ role.roleName }}</Option>
-        </Select>
+          <Select v-model="queryForm.roleId" placeholder="请选择角色" clearable>
+            <Option v-for="role in roleList" :key="role.id" :value="role.id">{{ role.roleName }}</Option>
+          </Select>
         </Col>
         <Col :span="6" class="btn-group">
-        <i-button type="default" @click="resetQuery">清空</i-button>
-        <i-button type="primary" @click="searchUser">搜索</i-button>
-        <i-button type="success" @click="addUser">新增</i-button>
+          <i-button type="default" @click="resetQuery">清空</i-button>
+          <i-button type="primary" @click="searchUser">搜索</i-button>
+          <i-button type="success" @click="addUser">新增</i-button>
         </Col>
       </Row>
     </div>
@@ -80,9 +80,9 @@
 export default {
   data() {
     const validatePassword = (rule, value, callback) => {
-      if (value !== '' && this.addUserForm.loginPwd === '') {
+      if (value !== '' && this.addUserForm.password === '') {
         callback(new Error('请输入确认密码'));
-      } else if (value !== '' && this.addUserForm.loginPwd !== value) {
+      } else if (value !== '' && this.addUserForm.password !== value) {
         callback(new Error('两次输入密码不一致'));
       } else {
         callback();
@@ -90,9 +90,9 @@ export default {
     };
 
     const validateLoginPwd = (rule, value, callback) => {
-      if (value !== '' && this.addUserForm.password === '') {
+      if (value !== '' && this.addUserForm.loginPwd === '') {
         callback(new Error('请输入密码'));
-      } else if (value !== '' && this.addUserForm.password !== value) {
+      } else if (value !== '' && this.addUserForm.loginPwd !== value) {
         callback(new Error('两次输入密码不一致'));
       } else {
         callback();
@@ -172,8 +172,13 @@ export default {
         },
         {
           title: '角色',
-          key: 'roleName',
-          align: 'center'
+          key: 'role',
+          align: 'center',
+          render: (h, params) => {
+            // 从 role 对象中获取 roleName
+            const roleName = params.row.role ? params.row.role.roleName : '未分配';
+            return h('span', roleName);
+          }
         },
         {
           title: '状态',
@@ -184,7 +189,7 @@ export default {
             const text = isDel;
             
             if (isDel === "删除") {
-              // 已删除状态 - 红色背景，白色文字
+              // 已删除状态 - 灰色背景，白色文字
               return h('Tag', {
                 props: {
                   color: 'error'
@@ -274,8 +279,11 @@ export default {
         .then(res => {
           if (res.code === 200) {
             this.tableData = res.data.records.map(item => {
+              // 添加 roleId 字段，用于查询和编辑时的角色匹配
+              const roleId = item.role ? item.role.id : '';
               return {
                 ...item,
+                roleId: roleId, // 添加 roleId 字段便于后续操作
                 createTime: item.createTime ? item.createTime.replace('T', ' ') : ''
               }
             })
@@ -298,7 +306,6 @@ export default {
         .then((res) => {
           if (res.code === 200) {
             let roleData = res.data.records
-           // roleData.push({ "id": '0', "roleName": '普通用户' })
             this.roleList = roleData
           } else {
             this.$Message.error('获取角色列表失败：' + res.message);
@@ -369,20 +376,12 @@ export default {
     },
     editUser(index) {
       const user = this.tableData[index];
-      // 根据 roleName 查找对应的 roleId
-      let roleId = user.roleId;
-      // 如果 roleId 为 null，但 roleName 有值，尝试从角色列表中查找对应的 ID
-      if ((roleId === null || roleId === '') && user.roleName) {
-        const matchedRole = this.roleList.find(role => role.roleName === user.roleName);
-        if (matchedRole) {
-          roleId = matchedRole.id;
-        }
-      }
+      // 使用直接从 tableData 中获取的 roleId（已经在 getUserList 中处理）
       this.editUserForm = {
         id: user.id,
         loginName: user.loginName,
         userName: user.userName,
-        roleId: roleId,
+        roleId: user.roleId || '', // 直接使用 roleId
         loginPwd: '',
       };
       this.editModalVisible = true;
@@ -433,7 +432,6 @@ export default {
             .then(res => {
               this.$Modal.remove();
               if (res.code === 200) {
-                // console.log('删除用户:', user.id);
                 this.$Message.success('删除用户成功');
                 this.getUserList();
               } else {
@@ -442,7 +440,6 @@ export default {
             })
             .catch(err => {
               this.$Modal.remove();
-              // console.error('删除接口报错：', err);
               this.$Message.error('网络错误，请重试');
             });
         },

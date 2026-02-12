@@ -21,8 +21,22 @@ service.interceptors.request.use(
     return config
   },
   error => {
-    console.error('请求错误:', error)
-    return Promise.reject(error)
+    console.error('响应错误:', error)
+    if (error.response && error.response.status === 401) {
+      Message.error('登录已失效，请重新登录')
+      
+      // 清除本地存储
+      localStorage.removeItem('admin_token')
+      localStorage.removeItem('userInfo')
+      localStorage.removeItem('userName')
+      
+      // 使用导入的router实例跳转
+      router.push('/login')
+      
+      return Promise.reject(error)
+    } else {
+      return Promise.reject(error)
+    }
   }
 )
 
@@ -47,7 +61,7 @@ service.interceptors.response.use(
       localStorage.removeItem('userInfo')
       localStorage.removeItem('userName')
       // 跳转到登录页
-      router.push('/login')
+      this.$router.push('/login');
     } else {
       return Promise.reject(new Error(res.message || 'Error'));
     }

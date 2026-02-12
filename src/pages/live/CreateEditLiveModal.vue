@@ -1,8 +1,6 @@
-<!-- 创建/编辑直播弹框 -->
-<!-- LiveManage/components/CreateEditLiveModal.vue -->
 <template>
   <Modal v-model="modalVisible" :title="isEditMode ? '修改直播' : '创建直播'" @on-ok="handleFormSubmit"
-    @on-cancel="handleCreateCancel" :loading="modalLoading" width="1000">
+    @on-cancel="handleCreateCancel" :loading="modalLoading" width="1000" :styles="{ top: '60px' }">
     <!-- 标签页组件 -->
     <Tabs v-model="activeTab">
       <TabPane name="tab1" label="直播信息"></TabPane>
@@ -58,14 +56,21 @@
           <div class="upload-tips">
             推荐图片尺寸为: 1000×562，支持 JPG、PNG 格式，图片大小不超过 10M
           </div>
-
-          <!-- 报名表勾选 - 编辑模式也可修改 -->
-          <div class="form-checkbox" style="margin-top: 10px;">
-            <Checkbox v-model="addEnrollmentForm" @change="handleEnrollmentCheck">
-              添加报名表
-            </Checkbox>
-          </div>
         </Form-item>
+
+        <!-- 新增：直播介绍 -->
+        <Form-item label="直播介绍" prop="introduce">
+          <Input v-model="currentLiveForm.introduce" type="textarea" :rows="4" placeholder="请输入直播介绍内容，将显示在直播封面下方"
+            :maxlength="500" show-word-limit>
+          </Input>
+        </Form-item>
+
+        <!-- 报名表勾选 - 编辑模式也可修改 -->
+        <div class="form-checkbox" style="margin: 10px 0 0 100px;">
+          <Checkbox v-model="addEnrollmentForm" @change="handleEnrollmentCheck">
+            添加报名表
+          </Checkbox>
+        </div>
       </Form>
     </div>
 
@@ -215,7 +220,8 @@ export default {
         id: '',
         liveShowName: '',
         startTime: '',
-        liveCover: ''
+        liveCover: '',
+        introduce: '' // 新增：直播介绍字段
       },
       liveRules: {
         liveShowName: [
@@ -238,6 +244,9 @@ export default {
               }
             }
           }
+        ],
+        introduce: [
+          { max: 500, message: '直播介绍不能超过500个字符', trigger: 'blur' }
         ]
       }
     };
@@ -330,7 +339,8 @@ export default {
         id: live.id || '',
         liveShowName: live.liveShowName || '',
         startTime: live.startTime || '',
-        liveCover: live.liveCover ? `/api/sysFile/image/${live.liveCover}` : ''
+        liveCover: live.liveCover ? `/api/sysFile/image/${live.liveCover}` : '',
+        introduce: live.introduce || '' // 新增：设置直播介绍
       };
 
       this.editImgId = live.liveCover || '';
@@ -366,7 +376,8 @@ export default {
         id: live.id,
         liveShowName: live.liveShowName,
         startTime: live.startTime,
-        liveCover: live.liveCover ? `/api/sysFile/image/${live.liveCover}` : ''
+        liveCover: live.liveCover ? `/api/sysFile/image/${live.liveCover}` : '',
+        introduce: live.introduce || '' // 新增：设置直播介绍
       };
       this.editImgId = live.liveCover || '';
       this.UPDATE_LIVE_FORM_STATE({ addEnrollmentForm: live.isEntryFrom === '1' });
@@ -382,7 +393,8 @@ export default {
         id: '',
         liveShowName: '',
         startTime: '',
-        liveCover: ''
+        liveCover: '',
+        introduce: '' // 新增：重置直播介绍
       };
       this.imgId = '';
       this.editImgId = '';
@@ -615,7 +627,8 @@ export default {
             ...processedLiveForm,
             liveCover: this.isEditMode ? this.editImgId : this.imgId,
             isEntryFrom: this.addEnrollmentForm ? '1' : '0',
-            tableFormat: this.addEnrollmentForm ? this.tableFormat : []
+            tableFormat: this.addEnrollmentForm ? this.tableFormat : [],
+            introduce: this.currentLiveForm.introduce // 新增：包含直播介绍
           };
 
           this.$emit('submit', submitData, this.isEditMode);
