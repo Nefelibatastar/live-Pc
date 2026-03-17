@@ -20,6 +20,17 @@
             <i-button type="text" @click="toClipboard('flv')" icon="ivu-icon-ios-copy">跳转</i-button>
           </div>
         </div>
+        <div class="qr-code-item" v-if="streamUrls.pullFlvQrCode">
+          <label class="url-label">FLV格式观看二维码：</label>
+          <div class="qr-code-content">
+            <img :src="'data:image/png;base64,' + streamUrls.pullFlvQrCode" alt="观看二维码"
+              style="max-width: 200px; max-height: 200px; border: 1px solid #e9ecef; border-radius: 4px;" />
+          </div>
+        </div>
+        <div v-else class="url-item">
+          <label class="url-label">观看二维码：</label>
+          <div class="url-content"><span>暂无二维码</span></div>
+        </div>
         <div class="url-item">
           <label class="url-label">M3U8 播流地址：</label>
           <div class="url-content">
@@ -150,5 +161,22 @@ export default {
 
 .url-content i-button:hover {
   color: #66b1ff;
+}
+
+.qr-code-item {
+  margin-bottom: 15px;
+  display: flex;
+  align-items: flex-start;
+}
+
+.qr-code-content {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  /* 图片居中 */
+  background: #f8f9fa;
+  padding: 12px;
+  border-radius: 4px;
+  border: 1px solid #e9ecef;
 }
 </style>

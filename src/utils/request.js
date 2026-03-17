@@ -44,7 +44,7 @@ service.interceptors.request.use(
 service.interceptors.response.use(
   response => {
     const res = response.data
-    // 处理正常响应中的业务错误（如后端自定义code≠200）
+    // 处理正常响应中的业务错误
     if (res.code !== 200) {
       console.error('接口错误:', res.message)
       Message.error(res.message || '接口请求失败')
@@ -61,7 +61,7 @@ service.interceptors.response.use(
       localStorage.removeItem('userInfo')
       localStorage.removeItem('userName')
       // 跳转到登录页
-      this.$router.push('/login');
+      router.push('/login');
     } else {
       return Promise.reject(new Error(res.message || 'Error'));
     }

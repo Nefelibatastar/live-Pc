@@ -44,9 +44,10 @@
               <div class="upload-text">选择图片</div>
             </div>
             <div class="preview-area" v-else>
-              <div class="preview-wrapper" @click="$emit('preview-image')">
+              <div class="preview-wrapper" @click="handlePreviewImage">
                 <img :src="currentLiveForm.liveCover" class="preview-thumb" alt="直播封面">
-                <div class="delete-icon" @click.stop="isEditMode ? removeEditCoverImage : removeCoverImage">
+                <!-- 修改：删除按钮调用带括号的方法 -->
+                <div class="delete-icon" @click.stop="isEditMode ? removeEditCoverImage() : removeCoverImage()">
                   <i class="el-icon-close"></i>
                 </div>
               </div>
@@ -325,7 +326,9 @@ export default {
         this.setEditData(this.liveData);
       }
     },
-
+    handlePreviewImage() {
+      this.$emit('preview-image', this.currentLiveForm.liveCover);
+    },
     setEditData(live) {
       console.log('设置编辑数据:', live); // 添加日志调试
 
@@ -550,12 +553,28 @@ export default {
 
     removeCoverImage() {
       this.currentLiveForm.liveCover = '';
+      // if (this.imgId) {
+      //   this.$api.delete(this.imgId);
+      // }
       this.imgId = '';
-      this.$api.delete(this.imgId);
     },
 
     removeEditCoverImage() {
       this.currentLiveForm.liveCover = '';
+      // if (this.editImgId) {
+        // this.$api.delete(this.editImgId)
+        //   .then(res => {
+        //     if (res.code === 200) {
+        //       // this.$Message.success('封面图删除成功');
+        //     } else {
+        //       this.$Message.warning('封面图删除失败：' + res.message);
+        //     }
+        //   })
+        //   .catch(err => {
+        //     console.error('删除封面图失败:', err);
+        //     this.$Message.warning('封面图删除失败，请手动清理');
+        //   });
+      // }
       this.editImgId = '';
     },
 
@@ -593,7 +612,6 @@ export default {
             this.$Message.warning('报名表请至少添加一个字段');
             return;
           }
-
           this.modalLoading = true;
 
           const formatStartTime = (time) => {

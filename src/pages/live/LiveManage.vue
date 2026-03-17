@@ -399,12 +399,23 @@ export default {
     },
 
     previewCoverImage(imgUrl) {
-      if (!imgUrl) {
-        this.$Message.warning('暂无图片可预览');
-        return;
+      if (typeof imgUrl === 'string') {
+        if (!imgUrl) {
+          this.$Message.warning('暂无图片可预览');
+          return;
+        }
+        this.previewImageUrl = imgUrl;
+        this.previewModalVisible = true;
+      } else {
+        const coverId = imgUrl;
+        if (!coverId) {
+          this.$Message.warning('暂无图片可预览');
+          return;
+        }
+        const imgUrl = `/api/sysFile/image/${coverId}`;
+        this.previewImageUrl = imgUrl;
+        this.previewModalVisible = true;
       }
-      this.previewImageUrl = imgUrl;
-      this.previewModalVisible = true;
     },
 
     // 编辑直播
@@ -495,7 +506,8 @@ export default {
 
       this.currentStreamUrls = {
         pullFlvUrl: row.pullFlvUrl || '',
-        pullM3u8Url: row.pullM3u8Url || ''
+        pullM3u8Url: row.pullM3u8Url || '',
+        pullFlvQrCode: row.pullFlvQrCode || ''   // 二维码
       };
       this.streamUrlModal = true;
     },

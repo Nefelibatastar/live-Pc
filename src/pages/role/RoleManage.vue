@@ -59,14 +59,11 @@
           <Input v-model="permissionForm.remark" :disabled="!isEditing" placeholder="请输入角色备注"></Input>
         </Form-item>
         <Form-item label="权限菜单" prop="menuIds">
-          <div :style="treeContainerStyle">
+          <div :style="treeContainerStyle" :class="{ 'permission-view-mode': !isEditing }">
             <el-tree ref="viewMenuTree" :data="allMenus" show-checkbox node-key="id" :props="{
               children: 'childrenProgramList',
               label: 'programName'
-            }" :default-expand-all="true" :check-strictly="false" @check="handlePermissionMenuCheck">
-            </el-tree>
-            <!-- 查看状态下添加遮罩层，完全禁用树形控件 -->
-            <div v-if="!isEditing" class="tree-mask"></div>
+            }" :default-expand-all="true" :check-strictly="false" @check="handlePermissionMenuCheck"></el-tree>
           </div>
         </Form-item>
       </Form>
@@ -266,7 +263,7 @@ export default {
     },
     deleteRole(index) {
       const user = this.tableData[index];
-      console.log(index,user)
+      console.log(index, user)
       this.$Modal.confirm({
         title: '确认删除',
         content: `确定要删除用户「${user.roleName}」吗？此操作不可撤销！`,
@@ -666,5 +663,25 @@ h2 {
   background: transparent;
   z-index: 10;
   cursor: not-allowed;
+}
+
+.permission-view-mode {
+  cursor: not-allowed;
+  /* 默认显示禁用图标 */
+}
+
+/* 禁用复选框点击 */
+.permission-view-mode .el-checkbox {
+  pointer-events: none;
+}
+
+/* 允许展开/折叠图标可点击，并恢复指针样式 */
+.permission-view-mode .el-tree-node__expand-icon {
+  cursor: pointer;
+}
+
+/* 可选：禁止文本选中，提升体验 */
+.permission-view-mode .el-tree-node__label {
+  user-select: none;
 }
 </style>
